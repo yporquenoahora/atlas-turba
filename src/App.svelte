@@ -2,6 +2,7 @@
   import { atlas } from "./lib/atlasData.js";
   import ConceptCloud from "./lib/ConceptCloud.svelte";
   import BarChart from "./lib/BarChart.svelte";
+  import ForceConceptGraph from "./lib/ForceConceptGraph.svelte";
 
   // Filtros
   let categoriaSeleccionada = "todas";
@@ -72,6 +73,56 @@
       pasaBusqueda
     );
   });
+
+    // Construir datos del grafo a partir de los ejemplos filtrados
+  function buildGraphData(datos) {
+    const nodesMap = new Map();
+    const links = [];
+
+    function addNode(key, type) {
+      if (!key) return null;
+      const id = `${type}:${key}`;
+      if (!nodesMap.has(id)) {
+        nodesMap.set(id, { id, key, type });
+      }
+      return id;
+    }
+
+    for (const d of datos) {
+      const catId  = addNode(d.categoria,          "cat");
+      const metaId = addNode(d.metafora_dominante, "meta");
+      const mecId  = addNode(d.mecanismo,          "mec");
+      const canId  = addNode(d.canal,              "canal");
+
+      if (catId && metaId) links.push({ source: catId, target: metaId });
+      if (metaId && mecId) links.push({ source: metaId, target: mecId });
+      if (mecId && canId)  links.push({ source: mecId, target: canId });
+    }
+
+    return { nodes: Array.from(nodesMap.values()), links };
+  }
+
+  $: graphData = buildGraphData(filtrados);
+
+
+  // Grafo basado en los datos filtrados actuales
+  $: graphData = buildGraphData(filtrados);
+
+      function handleSelectConcept(event) {
+    const { type, key } = event.detail;
+
+    if (type === "cat") {
+      categoriaSeleccionada = categoriaSeleccionada === key ? "todas" : key;
+    } else if (type === "meta") {
+      metaforaSeleccionada = metaforaSeleccionada === key ? "todas" : key;
+    } else if (type === "mec") {
+      mecanismoSeleccionado = mecanismoSeleccionado === key ? "todos" : key;
+    } else if (type === "canal") {
+      canalSeleccionado = canalSeleccionado === key ? "todos" : key;
+    }
+  }
+
+
 
   // Conteos globales (sobre todo el atlas)
   const conteoGlobalCategorias = contarPorClave(atlas, "categoria");
@@ -322,6 +373,11 @@
   />
 </section>
 
+<section class="panel" style="padding: 0.5rem;">
+  <h2 style="font-size:0.9rem; margin:0 0 0.3rem 0;">
+    Mapa de conexiones entre familias de conceptos
+  </h2>
+  <ForceConceptGraph {graphData} on:selectConcept={handleSelectConcept} />
 
       <!-- Gráficos -->
       <section class="grid-charts">
