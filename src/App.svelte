@@ -1,4 +1,6 @@
 <script>
+  // @ts-nocheck
+
   import {
     filtros,
     ui,
@@ -18,8 +20,14 @@
   import BarChart from "./lib/BarChart.svelte";
   import ForceConceptGraph from "./lib/ForceConceptGraph.svelte";
   import Legend from "./lib/Legend.svelte";
+  import MapaMetaforico from "./lib/MapaMetaforico.svelte";
 
+  import { continentesConfig, perfilesPersonaje } from "./stores/store.js";
+  import { perfilActivo, ataquesPerfil } from "./stores/store.js";
 
+  function seleccionarPerfil(id) {
+    perfilActivo.set(id);
+  }
 
   // ==== helpers para actualizar STORES ====
 
@@ -123,6 +131,11 @@
       públicos usando nubes de conceptos y gráficos.
     </p>
   </header>
+  <MapaMetaforico
+  continentes={continentesConfig}
+  ejemplos={$filtrados}
+  ataquesPerfil={$ataquesPerfil}
+/>
 
   <section class="layout">
     <!-- Columna izquierda: filtros “clásicos” -->
@@ -286,6 +299,7 @@
         />
 
         <div class="slider">
+          <!-- svelte-ignore a11y_label_has_associated_control -->
           <label>Mínimo de casos: {$ui.minCount}</label>
           <input
             type="range"
@@ -303,10 +317,6 @@
       </section>
 
       <section class="panel" style="padding: 0.5rem;">
-
-
-      
-
         <!-- Gráficos -->
         <section class="grid-charts">
           <BarChart
@@ -363,7 +373,6 @@
 </main>
 
 <style>
-
   :global(html, body) {
     margin: 0;
     padding: 0;
@@ -596,7 +605,7 @@
     margin-bottom: 0.5rem;
   }
 
-    /* ===== Ajustes para móvil ===== */
+  /* ===== Ajustes para móvil ===== */
   @media (max-width: 768px) {
     .app {
       padding: 0.75rem;
@@ -620,40 +629,40 @@
     }
 
     .layout {
-  margin-top: 1.5rem;
-  display: grid;
-  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
-  gap: 1.5rem;
-}
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
 
-/* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
-.layout > * {
-  min-width: 0;
-}
+    /* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
+    .layout > * {
+      min-width: 0;
+    }
 
-.col-derecha {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
-}
+    .col-derecha {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
 
-.panel,
-.panel-nube,
-.panel-lista {
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-/* Cualquier cosa con estas clases NO puede ser más ancha que su contenedor */
-:global(.chart),
-:global(.force-graph),
-:global(.concept-cloud-root),
-:global(.legend-root) {
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
-}
+    .panel,
+    .panel-nube,
+    .panel-lista {
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    /* Cualquier cosa con estas clases NO puede ser más ancha que su contenedor */
+    :global(.chart),
+    :global(.force-graph),
+    :global(.concept-cloud-root),
+    :global(.legend-root) {
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
 
     .grid-charts {
       grid-template-columns: 1fr;
@@ -677,46 +686,43 @@
       max-width: 100%;
     }
   }
-@media (max-width: 768px) {
-  .app {
-    padding: 0.75rem;
+  @media (max-width: 768px) {
+    .app {
+      padding: 0.75rem;
+    }
+
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .col-derecha {
+      gap: 0.75rem;
+    }
+
+    .grid-charts {
+      grid-template-columns: 1fr;
+    }
+
+    .grid-ejemplos {
+      grid-template-columns: 1fr;
+    }
+
+    .force-graph {
+      height: 260px;
+    }
+    aside {
+      display: none;
+    }
   }
 
-  .layout {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+  @media (max-width: 400px) {
+    .app {
+      padding: 0.5rem;
+    }
 
-  .col-derecha {
-    gap: 0.75rem;
+    .input-tag {
+      max-width: 100%;
+    }
   }
-
-  .grid-charts {
-    grid-template-columns: 1fr;
-  }
-
-  .grid-ejemplos {
-    grid-template-columns: 1fr;
-  }
-
-  .force-graph {
-    height: 260px;
-  }
-   aside{
-    display: none;
-  }
-}
-
-@media (max-width: 400px) {
-  .app {
-    padding: 0.5rem;
-  }
-
-  .input-tag {
-    max-width: 100%;
-  }
- 
-}
-
-
 </style>

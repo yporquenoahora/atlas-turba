@@ -23,6 +23,7 @@
     padding: 0.5rem 0;
     font-size: 0.85rem;
     color: #e5e7eb;
+    flex-wrap: wrap;
   }
   .legend-item { display: flex; align-items: center; gap: 0.3rem; }
   .color {

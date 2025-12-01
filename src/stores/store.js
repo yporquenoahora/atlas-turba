@@ -1,6 +1,12 @@
 // src/lib/stores/atlasStores.js
 import { writable, derived } from "svelte/store";
 import { atlas } from "../lib/atlasData.js";
+import {perfilesPersonaje} from "../lib/perfilesPersonaje.js"
+// en store.js
+import { continentesConfig } from "../lib/continentesConfig.js";
+
+export { continentesConfig, perfilesPersonaje }; // para reexportar si quieres
+
 
 function contarPorClave(datos, clave) {
   const mapa = new Map();
@@ -193,4 +199,31 @@ function buildGraphData(datos, minCount) {
 export const graphData = derived(
   [filtrados, ui],
   ([$filtrados, $ui]) => buildGraphData($filtrados, Number($ui.minCount) || 1)
+);
+
+
+export const perfilActivo = writable(null); // id de perfil o null
+
+export const ataquesPerfil = derived(
+  [filtrados, perfilActivo],
+  ([$filtrados, $perfilActivo]) => {
+    if (!$perfilActivo) return { perfil: null, ataques: [], total: 0, sobrevive: 0 };
+
+    const perfil = perfiles.find(p => p.id === $perfilActivo);
+    if (!perfil) return { perfil: null, ataques: [], total: 0, sobrevive: 0 };
+
+    const { match } = perfil;
+
+    const ataques = $filtrados.filter(d => {
+      // match por campos; puedes afinarlo luego
+      const okCategoria = !match.categoria || match.categoria.includes(d.categoria);
+      const okTipo = !match.tipo_victima || match.tipo_victima.includes(d.tipo_victima);
+      return okCategoria && okTipo;
+    });
+
+    const total = ataques.length;
+    const sobrevive = ataques.filter(d => d.ataque_exitoso === false).length;
+
+    return { perfil, ataques, total, sobrevive };
+  }
 );
