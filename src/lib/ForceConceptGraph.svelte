@@ -56,7 +56,7 @@
       .selectAll("circle")
       .data(currentNodes)
       .join("circle")
-      .attr("r", 10)
+      .attr("r", 5)
       .attr("class", d => `node node-${d.type}`);
 
     const label = container
@@ -228,7 +228,7 @@
   // Estado "normal": todo visible
   function resetHighlight(svg) {
     svg.selectAll(".node")
-      .style("opacity", 0.95)
+      .style("opacity", 0.65)
       .style("stroke-width", 1.2);
 
     svg.selectAll(".node-label")
@@ -273,17 +273,17 @@
     cursor: pointer;
   }
 
-  :global(.node-cat)   { fill: #22c55e; } /* categorías */
-  :global(.node-meta)  { fill: #38bdf8; } /* metáforas */
-  :global(.node-mec)   { fill: #f97316; } /* mecanismos */
-  :global(.node-canal) { fill: #a855f7; } /* canales */
+  :global(.node-cat)   { stroke: #22c55e; } /* categorías */
+  :global(.node-meta)  { stroke: #38bdf8; } /* metáforas */
+  :global(.node-mec)   { stroke: #f97316; } /* mecanismos */
+  :global(.node-canal) { stroke: #a855f7; } /* canales */
 
   :global(.node-label) {
     fill: #e5e7eb;
     font-size: 11px;
     paint-order: stroke;
     stroke: #000;
-    stroke-width: 2px;
+    stroke-width: 0.8px;
   }
 
   :global(.link) {

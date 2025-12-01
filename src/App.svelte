@@ -363,8 +363,16 @@
 </main>
 
 <style>
-  :global(body) {
+
+  :global(html, body) {
     margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  :global(body) {
     font-family:
       system-ui,
       -apple-system,
@@ -375,10 +383,12 @@
     color: #f9fafb;
   }
 
-  .app {
+  #app {
     max-width: 1280px;
+    width: 100%;
     margin: 0 auto;
     padding: 1.5rem;
+    box-sizing: border-box;
   }
 
   .header h1 {
@@ -585,4 +595,128 @@
     color: #94a3b8;
     margin-bottom: 0.5rem;
   }
+
+    /* ===== Ajustes para móvil ===== */
+  @media (max-width: 768px) {
+    .app {
+      padding: 0.75rem;
+    }
+
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .col-derecha {
+      gap: 0.75rem;
+    }
+
+    .panel {
+      border-radius: 0.5rem;
+    }
+
+    .panel-nube {
+      padding: 0.6rem;
+    }
+
+    .layout {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+/* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
+.layout > * {
+  min-width: 0;
+}
+
+.col-derecha {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.panel,
+.panel-nube,
+.panel-lista {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* Cualquier cosa con estas clases NO puede ser más ancha que su contenedor */
+:global(.chart),
+:global(.force-graph),
+:global(.concept-cloud-root),
+:global(.legend-root) {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+    .grid-charts {
+      grid-template-columns: 1fr;
+    }
+
+    .grid-ejemplos {
+      grid-template-columns: 1fr;
+    }
+
+    .force-graph {
+      height: 260px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .app {
+      padding: 0.5rem;
+    }
+
+    .input-tag {
+      max-width: 100%;
+    }
+  }
+@media (max-width: 768px) {
+  .app {
+    padding: 0.75rem;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .col-derecha {
+    gap: 0.75rem;
+  }
+
+  .grid-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-ejemplos {
+    grid-template-columns: 1fr;
+  }
+
+  .force-graph {
+    height: 260px;
+  }
+   aside{
+    display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .app {
+    padding: 0.5rem;
+  }
+
+  .input-tag {
+    max-width: 100%;
+  }
+ 
+}
+
+
 </style>
