@@ -24,6 +24,7 @@
 
   import { continentesConfig, perfilesPersonaje } from "./stores/store.js";
   import { perfilActivo, ataquesPerfil } from "./stores/store.js";
+    import MapaProcreate from "./lib/MapaProcreate.svelte";
 
   function seleccionarPerfil(id) {
     perfilActivo.set(id);
@@ -131,6 +132,7 @@
       públicos usando nubes de conceptos y gráficos.
     </p>
   </header>
+  <MapaProcreate/>
   <MapaMetaforico
   continentes={continentesConfig}
   ejemplos={$filtrados}
