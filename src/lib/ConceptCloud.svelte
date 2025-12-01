@@ -1,8 +1,12 @@
 <script>
   import { createEventDispatcher } from "svelte";
 
+    
+
+
   export let titulo = "";
   // items: [{ nombre, count, active, disabled }]
+
   export let items = [];
 
   const dispatch = createEventDispatcher();

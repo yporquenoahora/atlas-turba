@@ -4,19 +4,35 @@
   export let titulo = "";
   export let maxItems = 10;
 
-  $: topData = data
-    .slice()
-    .sort((a, b) => b.value - a.value)
-    .slice(0, maxItems);
+  // colores para la barra (puedes sobreescribirlos desde fuera)
+  export let colorFrom = "#22c55e";
+  export let colorTo = "#84cc16";
 
-  $: maxValue = Math.max(1, ...topData.map(d => d.value || 0));
+  // top N ordenado
+  $: topData = Array.isArray(data)
+    ? data
+        .slice()
+        .sort((a, b) => (b.valor || 0) - (a.valor || 0))
+        .slice(0, maxItems)
+    : [];
+
+  // máximo para normalizar
+  $: maxValue =
+    topData.length > 0
+      ? Math.max(1, ...topData.map((d) => d.valor || 0))
+      : 1;
+
+  // por si quieres mostrar “top real” (si hay menos items que maxItems)
+  $: topReal = Math.min(maxItems, data?.length || 0);
+
+  $:    console.log(data, topData)
 </script>
 
 <section class="chart">
   <header>
     <h2>{titulo}</h2>
     <p class="sub">
-      Top {maxItems} · total categorías: {data.length}
+      Top {topReal} · total ítems: {data ? data.length : 0}
     </p>
   </header>
 
@@ -26,14 +42,14 @@
     <div class="bars">
       {#each topData as d}
         <div class="row">
-          <div class="label">{d.label}</div>
+          <div class="label" title={d.label}>{d.label}</div>
           <div class="bar-wrapper">
             <div
               class="bar"
-              style={`--w:${(d.value / maxValue) * 100}%;`}
+              style={`--w:${(d.valor / maxValue) * 100}%; --from:${colorFrom}; --to:${colorTo};`}
             ></div>
           </div>
-          <div class="value">{d.value}</div>
+          <div class="value">{d.valor}</div>
         </div>
       {/each}
     </div>
@@ -90,7 +106,7 @@
     height: 100%;
     width: var(--w, 10%);
     max-width: 100%;
-    background: linear-gradient(90deg, #22c55e, #84cc16);
+    background: linear-gradient(90deg, var(--from), var(--to));
   }
   .value {
     font-variant-numeric: tabular-nums;

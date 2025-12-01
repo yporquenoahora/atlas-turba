@@ -14,6 +14,9 @@
   let currentLinks = [];
   let neighbors = new Map();
 
+  let tooltipEl;
+
+
   const dispatch = createEventDispatcher();
 
   // Cada vez que cambien los datos y el SVG exista, rehacemos el grafo
@@ -137,7 +140,30 @@
         event.stopPropagation();
         dispatch("selectConcept", { type: d.type, key: d.key });
       })
-      .style("cursor", "pointer");
+      .on("mouseover", (event, d) => {
+  highlightNode(d, svg);
+
+  tooltipEl.innerHTML = `
+    <strong>${d.key}</strong><br>
+    Tipo: ${d.type}<br>
+    Vecinos: ${neighbors.get(d.id)?.size ?? 0}
+  `;
+  tooltipEl.style.opacity = 1;
+
+  const { clientX: x, clientY: y } = event;
+  tooltipEl.style.left = x + 15 + "px";
+  tooltipEl.style.top  = y + 15 + "px";
+})
+.on("mousemove", (event) => {
+  const { clientX: x, clientY: y } = event;
+  tooltipEl.style.left = x + 15 + "px";
+  tooltipEl.style.top  = y + 15 + "px";
+})
+.on("mouseout", () => {
+  resetHighlight(svg);
+  tooltipEl.style.opacity = 0;
+})
+    .style("cursor", "pointer");
   }
 
   function drag() {
@@ -225,6 +251,8 @@
   });
 </script>
 
+<div bind:this={tooltipEl} class="tooltip"></div>
+
 <svg bind:this={svgEl} class="force-graph"></svg>
 <style>
   /* === Estilos locales del contenedor === */
@@ -263,5 +291,18 @@
     stroke-width: 1.2px;
     stroke-opacity: 0.8;
     transition: opacity 0.15s, stroke-width 0.15s;
+  }
+
+   .tooltip {
+    position: fixed;
+    background: #111827;
+    color: #f1f5f9;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    border: 1px solid #334155;
   }
 </style>

@@ -1,251 +1,118 @@
 <script>
-  import { atlas } from "./lib/atlasData.js";
+  import {
+    filtros,
+    ui,
+    filtrados,
+    conteosFiltrados,
+    nubes,
+    graphData,
+    categoriasUnicas,
+    metaforasUnicas,
+    mecanismosUnicos,
+    canalesUnicos,
+  } from "./stores/store.js";
+
+  import { COLORES_TIPO } from "./lib/theme.js";
+
   import ConceptCloud from "./lib/ConceptCloud.svelte";
   import BarChart from "./lib/BarChart.svelte";
   import ForceConceptGraph from "./lib/ForceConceptGraph.svelte";
+  import Legend from "./lib/Legend.svelte";
 
-  // Filtros
-  let categoriaSeleccionada = "todas";
-  let metaforaSeleccionada = "todas";
-  let mecanismoSeleccionado = "todos";
-  let canalSeleccionado = "todos";
-  let busqueda = "";
 
-  // Vista actual de la nube: metaforas | categorias | mecanismos | canales
-  let nubeVista = "metaforas";
-  let busquedaTag = "";
 
-  // Helpers
-  function contarPorClave(datos, clave) {
-    const mapa = new Map();
-    for (const d of datos) {
-      const k = d[clave];
-      if (!k) continue;
-      mapa.set(k, (mapa.get(k) || 0) + 1);
-    }
-    return Array.from(mapa, ([nombre, valor]) => ({ nombre, valor })).sort(
-      (a, b) => b.valor - a.valor,
-    );
+  // ==== helpers para actualizar STORES ====
+
+  function setFiltro(partial) {
+    filtros.update((f) => ({ ...f, ...partial }));
   }
 
-  // Valores únicos para selects (además de las nubes)
-  const categoriasUnicas = [
-    ...new Set(atlas.map((d) => d.categoria).filter(Boolean)),
-  ].sort();
-  const metaforasUnicas = [
-    ...new Set(atlas.map((d) => d.metafora_dominante).filter(Boolean)),
-  ].sort();
-  const mecanismosUnicos = [
-    ...new Set(atlas.map((d) => d.mecanismo).filter(Boolean)),
-  ].sort();
-  const canalesUnicos = [
-    ...new Set(atlas.map((d) => d.canal).filter(Boolean)),
-  ].sort();
-
-  // Datos filtrados según los filtros actuales
-  $: filtrados = atlas.filter((d) => {
-    const pasaCategoria =
-      categoriaSeleccionada === "todas" ||
-      d.categoria === categoriaSeleccionada;
-    const pasaMetafora =
-      metaforaSeleccionada === "todas" ||
-      d.metafora_dominante === metaforaSeleccionada;
-    const pasaMecanismo =
-      mecanismoSeleccionado === "todos" ||
-      d.mecanismo === mecanismoSeleccionado;
-    const pasaCanal =
-      canalSeleccionado === "todos" || d.canal === canalSeleccionado;
-
-    const texto = (
-      (d.ejemplo || "") +
-      " " +
-      (d.descripcion || "") +
-      " " +
-      (d.tipo_victima || "")
-    ).toLowerCase();
-    const pasaBusqueda = texto.includes(busqueda.toLowerCase().trim());
-
-    return (
-      pasaCategoria &&
-      pasaMetafora &&
-      pasaMecanismo &&
-      pasaCanal &&
-      pasaBusqueda
-    );
-  });
-
-    // Construir datos del grafo a partir de los ejemplos filtrados
-  function buildGraphData(datos) {
-    const nodesMap = new Map();
-    const links = [];
-
-    function addNode(key, type) {
-      if (!key) return null;
-      const id = `${type}:${key}`;
-      if (!nodesMap.has(id)) {
-        nodesMap.set(id, { id, key, type });
-      }
-      return id;
-    }
-
-    for (const d of datos) {
-      const catId  = addNode(d.categoria,          "cat");
-      const metaId = addNode(d.metafora_dominante, "meta");
-      const mecId  = addNode(d.mecanismo,          "mec");
-      const canId  = addNode(d.canal,              "canal");
-
-      if (catId && metaId) links.push({ source: catId, target: metaId });
-      if (metaId && mecId) links.push({ source: metaId, target: mecId });
-      if (mecId && canId)  links.push({ source: mecId, target: canId });
-    }
-
-    return { nodes: Array.from(nodesMap.values()), links };
+  function setUi(partial) {
+    ui.update((u) => ({ ...u, ...partial }));
   }
 
-  $: graphData = buildGraphData(filtrados);
-
-
-  // Grafo basado en los datos filtrados actuales
-  $: graphData = buildGraphData(filtrados);
-
-      function handleSelectConcept(event) {
+  function handleSelectConcept(event) {
     const { type, key } = event.detail;
-
-    if (type === "cat") {
-      categoriaSeleccionada = categoriaSeleccionada === key ? "todas" : key;
-    } else if (type === "meta") {
-      metaforaSeleccionada = metaforaSeleccionada === key ? "todas" : key;
-    } else if (type === "mec") {
-      mecanismoSeleccionado = mecanismoSeleccionado === key ? "todos" : key;
-    } else if (type === "canal") {
-      canalSeleccionado = canalSeleccionado === key ? "todos" : key;
-    }
+    filtros.update((f) => {
+      if (type === "cat") {
+        return { ...f, categoria: f.categoria === key ? "todas" : key };
+      } else if (type === "meta") {
+        return { ...f, metafora: f.metafora === key ? "todas" : key };
+      } else if (type === "mec") {
+        return { ...f, mecanismo: f.mecanismo === key ? "todos" : key };
+      } else if (type === "canal") {
+        return { ...f, canal: f.canal === key ? "todos" : key };
+      }
+      return f;
+    });
   }
 
+  function handleFocusTipo(event) {
+    const { type } = event.detail;
+    if (type === "metaforas") setUi({ nubeVista: "metaforas" });
+    if (type === "categorias") setUi({ nubeVista: "categorias" });
+    if (type === "mecanismos") setUi({ nubeVista: "mecanismos" });
+    if (type === "canales") setUi({ nubeVista: "canales" });
+  }
 
-
-  // Conteos globales (sobre todo el atlas)
-  const conteoGlobalCategorias = contarPorClave(atlas, "categoria");
-  const conteoGlobalMetaforas = contarPorClave(atlas, "metafora_dominante");
-  const conteoGlobalMecanismos = contarPorClave(atlas, "mecanismo");
-  const conteoGlobalCanales = contarPorClave(atlas, "canal");
-
-  // Conteos sobre datos filtrados (para conectar nubes)
-  $: conteoFiltradoCategorias = contarPorClave(filtrados, "categoria");
-  $: conteoFiltradoMetaforas = contarPorClave(filtrados, "metafora_dominante");
-  $: conteoFiltradoMecanismos = contarPorClave(filtrados, "mecanismo");
-  $: conteoFiltradoCanales = contarPorClave(filtrados, "canal");
-
-  // Convertimos conteos filtrados en Map para lookup rápido
-  $: mapaCatFiltrado = new Map(
-    conteoFiltradoCategorias.map((d) => [d.nombre, d.valor]),
-  );
-  $: mapaMetFiltrado = new Map(
-    conteoFiltradoMetaforas.map((d) => [d.nombre, d.valor]),
-  );
-  $: mapaMecFiltrado = new Map(
-    conteoFiltradoMecanismos.map((d) => [d.nombre, d.valor]),
-  );
-  $: mapaCanFiltrado = new Map(
-    conteoFiltradoCanales.map((d) => [d.nombre, d.valor]),
-  );
-
-  // Nubes de conceptos (usamos los conteos globales como base)
-  $: nubeCategorias = conteoGlobalCategorias.map((d) => ({
-    nombre: d.nombre,
-    count: d.valor,
-    active: categoriaSeleccionada === d.nombre,
-    disabled: !mapaCatFiltrado.has(d.nombre),
-  }));
-
-  $: nubeMetaforas = conteoGlobalMetaforas.map((d) => ({
-    nombre: d.nombre,
-    count: d.valor,
-    active: metaforaSeleccionada === d.nombre,
-    disabled: !mapaMetFiltrado.has(d.nombre),
-  }));
-
-  $: nubeMecanismos = conteoGlobalMecanismos.map((d) => ({
-    nombre: d.nombre,
-    count: d.valor,
-    active: mecanismoSeleccionado === d.nombre,
-    disabled: !mapaMecFiltrado.has(d.nombre),
-  }));
-
-  $: nubeCanales = conteoGlobalCanales.map((d) => ({
-    nombre: d.nombre,
-    count: d.valor,
-    active: canalSeleccionado === d.nombre,
-    disabled: !mapaCanFiltrado.has(d.nombre),
-  }));
-
-  // Datos para gráficos de barras
-  $: dataChartCategorias = conteoFiltradoCategorias.map((d) => ({
-    label: d.nombre,
-    value: d.valor,
-  }));
-  $: dataChartMetaforas = conteoFiltradoMetaforas.map((d) => ({
-    label: d.nombre,
-    value: d.valor,
-  }));
-  $: dataChartCanales = conteoFiltradoCanales.map((d) => ({
-    label: d.nombre,
-    value: d.valor,
-  }));
-
-
-
-    // Nube en función de la pestaña activa
-  $: nubeActualBase =
-    nubeVista === "metaforas"
-      ? nubeMetaforas
-      : nubeVista === "categorias"
-      ? nubeCategorias
-      : nubeVista === "mecanismos"
-      ? nubeMecanismos
-      : nubeCanales; // "canales"
-
-  // Filtro de texto sobre la nube actual
-  $: nubeActual = nubeActualBase.filter(item =>
-    item.nombre.toLowerCase().includes(busquedaTag.toLowerCase().trim())
-  );
-
-  // Manejar clic en un tag según la pestaña actual
+  // clic en un tag de la nube (usa la pestaña activa del store ui)
   function handleToggleTag(evt) {
     const { nombre } = evt.detail;
+    const vista = $ui.nubeVista;
 
-    if (nubeVista === "metaforas") {
-      metaforaSeleccionada = metaforaSeleccionada === nombre ? "todas" : nombre;
-    } else if (nubeVista === "categorias") {
-      categoriaSeleccionada = categoriaSeleccionada === nombre ? "todas" : nombre;
-    } else if (nubeVista === "mecanismos") {
-      mecanismoSeleccionado = mecanismoSeleccionado === nombre ? "todos" : nombre;
-    } else if (nubeVista === "canales") {
-      canalSeleccionado = canalSeleccionado === nombre ? "todos" : nombre;
-    }
+    filtros.update((f) => {
+      if (vista === "metaforas") {
+        return { ...f, metafora: f.metafora === nombre ? "todas" : nombre };
+      } else if (vista === "categorias") {
+        return { ...f, categoria: f.categoria === nombre ? "todas" : nombre };
+      } else if (vista === "mecanismos") {
+        return { ...f, mecanismo: f.mecanismo === nombre ? "todos" : nombre };
+      } else if (vista === "canales") {
+        return { ...f, canal: f.canal === nombre ? "todos" : nombre };
+      }
+      return f;
+    });
   }
 
+  // ==== derivados (solo lectura) ====
 
-  // Handlers para la nube
-  function toggleCategoria(evt) {
-    const { nombre } = evt.detail;
-    categoriaSeleccionada = categoriaSeleccionada === nombre ? "todas" : nombre;
-  }
+  // resumen textual de filtros activos
+  $: resumenFiltros = `
+    ${$filtros.categoria !== "todas" ? `Categoría: ${$filtros.categoria}` : ""}
+    ${$filtros.metafora !== "todas" ? ` · Metáfora: ${$filtros.metafora}` : ""}
+    ${$filtros.mecanismo !== "todos" ? ` · Mecanismo: ${$filtros.mecanismo}` : ""}
+    ${$filtros.canal !== "todos" ? ` · Canal: ${$filtros.canal}` : ""}
+  `.trim();
 
-  function toggleMetafora(evt) {
-    const { nombre } = evt.detail;
-    metaforaSeleccionada = metaforaSeleccionada === nombre ? "todas" : nombre;
-  }
+  // datos para gráficas
+  $: dataChartCategorias = $conteosFiltrados.categorias.map((d) => ({
+    label: d.nombre,
+    value: d.valor,
+  }));
+  $: dataChartMetaforas = $conteosFiltrados.metaforas.map((d) => ({
+    label: d.nombre,
+    value: d.valor,
+  }));
+  $: dataChartCanales = $conteosFiltrados.canales.map((d) => ({
+    label: d.nombre,
+    value: d.valor,
+  }));
 
-  function toggleMecanismo(evt) {
-    const { nombre } = evt.detail;
-    mecanismoSeleccionado = mecanismoSeleccionado === nombre ? "todos" : nombre;
-  }
+  // nubes según pestaña activa
+  $: nubeActualBase =
+    $ui.nubeVista === "metaforas"
+      ? $nubes.nubeMetaforas
+      : $ui.nubeVista === "categorias"
+        ? $nubes.nubeCategorias
+        : $ui.nubeVista === "mecanismos"
+          ? $nubes.nubeMecanismos
+          : $nubes.nubeCanales;
 
-  function toggleCanal(evt) {
-    const { nombre } = evt.detail;
-    canalSeleccionado = canalSeleccionado === nombre ? "todos" : nombre;
-  }
+  $: nubeActual = nubeActualBase.filter((item) =>
+    item.nombre
+      .toLowerCase()
+      .includes(($ui.busquedaTag || "").toLowerCase().trim()),
+  );
 </script>
 
 <main class="app">
@@ -264,7 +131,10 @@
 
       <label>
         Categoría
-        <select bind:value={categoriaSeleccionada}>
+        <select
+          bind:value={$filtros.categoria}
+          on:change={(e) => setFiltro({ categoria: e.target.value })}
+        >
           <option value="todas">todas</option>
           {#each categoriasUnicas as c}
             <option value={c}>{c}</option>
@@ -274,7 +144,10 @@
 
       <label>
         Metáfora dominante
-        <select bind:value={metaforaSeleccionada}>
+        <select
+          bind:value={$filtros.metafora}
+          on:change={(e) => setFiltro({ metafora: e.target.value })}
+        >
           <option value="todas">todas</option>
           {#each metaforasUnicas as m}
             <option value={m}>{m}</option>
@@ -284,7 +157,10 @@
 
       <label>
         Mecanismo
-        <select bind:value={mecanismoSeleccionado}>
+        <select
+          bind:value={$filtros.mecanismo}
+          on:change={(e) => setFiltro({ mecanismo: e.target.value })}
+        >
           <option value="todos">todos</option>
           {#each mecanismosUnicos as m}
             <option value={m}>{m}</option>
@@ -294,7 +170,10 @@
 
       <label>
         Canal
-        <select bind:value={canalSeleccionado}>
+        <select
+          bind:value={$filtros.canal}
+          on:change={(e) => setFiltro({ canal: e.target.value })}
+        >
           <option value="todos">todos</option>
           {#each canalesUnicos as c}
             <option value={c}>{c}</option>
@@ -307,123 +186,177 @@
         <input
           type="text"
           placeholder="Ej: tiburones, Sálvame, científicos..."
-          bind:value={busqueda}
+          bind:value={$filtros.texto}
+          on:input={(e) => setFiltro({ texto: e.target.value })}
         />
       </label>
 
       <p class="resumen">
-        {filtrados.length} ejemplos coinciden con la combinación actual.
+        {$filtrados.length} ejemplos coinciden con la combinación actual.
       </p>
     </aside>
 
     <!-- Columna derecha: nubes + gráficos + tarjetas -->
     <section class="col-derecha">
       <!-- Nubes de conceptos -->
-    <section class="panel panel-nube">
-  <div class="tabs">
-    <button
-      class:selected={nubeVista === "metaforas"}
-      on:click={() => { nubeVista = "metaforas"; busquedaTag = ""; }}
-    >
-      Metáforas
-    </button>
-    <button
-      class:selected={nubeVista === "categorias"}
-      on:click={() => { nubeVista = "categorias"; busquedaTag = ""; }}
-    >
-      Categorías
-    </button>
-    <button
-      class:selected={nubeVista === "mecanismos"}
-      on:click={() => { nubeVista = "mecanismos"; busquedaTag = ""; }}
-    >
-      Mecanismos
-    </button>
-    <button
-      class:selected={nubeVista === "canales"}
-      on:click={() => { nubeVista = "canales"; busquedaTag = ""; }}
-    >
-      Canales
-    </button>
-  </div>
+      <section class="panel panel-nube">
+        <div class="tabs">
+          <button
+            class:selected={$ui.nubeVista === "metaforas"}
+            style={`--tab-color: ${COLORES_TIPO.metaforas}`}
+            on:click={() => setUi({ nubeVista: "metaforas", busquedaTag: "" })}
+          >
+            Metáforas
+          </button>
+          <button
+            class:selected={$ui.nubeVista === "categorias"}
+            style={`--tab-color: ${COLORES_TIPO.categorias}`}
+            on:click={() => setUi({ nubeVista: "categorias", busquedaTag: "" })}
+          >
+            Categorías
+          </button>
+          <button
+            class:selected={$ui.nubeVista === "mecanismos"}
+            style={`--tab-color: ${COLORES_TIPO.mecanismos}`}
+            on:click={() => setUi({ nubeVista: "mecanismos", busquedaTag: "" })}
+          >
+            Mecanismos
+          </button>
+          <button
+            class:selected={$ui.nubeVista === "canales"}
+            style={`--tab-color: ${COLORES_TIPO.canales}`}
+            on:click={() => setUi({ nubeVista: "canales", busquedaTag: "" })}
+          >
+            Canales
+          </button>
+        </div>
 
-  <div class="nube-header">
-    <p class="nube-titulo">
-      {#if nubeVista === "metaforas"}
-        Metáforas dominantes
-      {:else if nubeVista === "categorias"}
-        Categorías temáticas
-      {:else if nubeVista === "mecanismos"}
-        Mecanismos de distorsión
-      {:else}
-        Canales de difusión
-      {/if}
-    </p>
-    <input
-      type="text"
-      placeholder="Filtrar tags de esta nube..."
-      bind:value={busquedaTag}
-      class="input-tag"
-    />
-  </div>
+        <div class="nube-header">
+          <p class="nube-titulo">
+            {#if $ui.nubeVista === "metaforas"}
+              Metáforas dominantes
+            {:else if $ui.nubeVista === "categorias"}
+              Categorías temáticas
+            {:else if $ui.nubeVista === "mecanismos"}
+              Mecanismos de distorsión
+            {:else}
+              Canales de difusión
+            {/if}
+          </p>
+          <input
+            type="text"
+            placeholder="Filtrar tags de esta nube..."
+            class="input-tag"
+            value={$ui.busquedaTag}
+            on:input={(e) => setUi({ busquedaTag: e.target.value })}
+          />
+        </div>
 
-  <ConceptCloud
-    items={nubeActual}
-    on:toggle={handleToggleTag}
-  />
-</section>
+        <ConceptCloud items={nubeActual} on:toggle={handleToggleTag} />
+      </section>
 
-<section class="panel" style="padding: 0.5rem;">
-  <h2 style="font-size:0.9rem; margin:0 0 0.3rem 0;">
-    Mapa de conexiones entre familias de conceptos
-  </h2>
-  <ForceConceptGraph {graphData} on:selectConcept={handleSelectConcept} />
+      <section class="panel" style="padding: 0.5rem;">
+        <div class="resumen-filtros">
+          {resumenFiltros || "Sin filtros activos"}
+        </div>
+        <h2 style="font-size:0.9rem; margin:0 0 0.3rem 0;">
+          Mapa de conexiones entre familias de conceptos
+        </h2>
 
-      <!-- Gráficos -->
-      <section class="grid-charts">
-        <BarChart
-          titulo="Top categorías en el filtro actual"
-          data={dataChartCategorias}
-          maxItems={8}
+        <Legend
+          items={[
+            {
+              label: "Categorías",
+              type: "categorias",
+              color: COLORES_TIPO.categorias,
+            },
+            {
+              label: "Metáforas",
+              type: "metaforas",
+              color: COLORES_TIPO.metaforas,
+            },
+            {
+              label: "Mecanismos",
+              type: "mecanismos",
+              color: COLORES_TIPO.mecanismos,
+            },
+            { label: "Canales", type: "canales", color: COLORES_TIPO.canales },
+          ]}
+          on:focusTipo={handleFocusTipo}
         />
-        <BarChart
-          titulo="Top metáforas en el filtro actual"
-          data={dataChartMetaforas}
-          maxItems={8}
-        />
-        <BarChart
-          titulo="Top canales en el filtro actual"
-          data={dataChartCanales}
-          maxItems={6}
+
+        <div class="slider">
+          <label>Mínimo de casos: {$ui.minCount}</label>
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={$ui.minCount}
+            on:input={(e) => setUi({ minCount: Number(e.target.value) })}
+          />
+        </div>
+
+        <ForceConceptGraph
+          graphData={$graphData}
+          on:selectConcept={handleSelectConcept}
         />
       </section>
 
-      <!-- Lista de resultados -->
-      <section class="panel panel-lista">
-        <h2>Ejemplos detallados</h2>
-        {#if filtrados.length === 0}
-          <p class="vacio">
-            No se han encontrado ejemplos con esta combinación.
-          </p>
-        {:else}
-          <div class="grid-ejemplos">
-            {#each filtrados as d}
-              <article class="card">
-                <h3>{d.ejemplo}</h3>
-                <p class="tags">
-                  <span>{d.categoria}</span> ·
-                  <span>{d.tipo_victima}</span> ·
-                  <span>Metáfora: {d.metafora_dominante}</span> ·
-                  <span>Canal: {d.canal}</span>
-                </p>
-                <p class="desc">{d.descripcion}</p>
-                <p class="mec">
-                  Mecanismo: <strong>{d.mecanismo}</strong>
-                </p>
-              </article>
-            {/each}
-          </div>
-        {/if}
+      <section class="panel" style="padding: 0.5rem;">
+
+
+      
+
+        <!-- Gráficos -->
+        <section class="grid-charts">
+          <BarChart
+            titulo="Top categorías en el filtro actual"
+            data={$conteosFiltrados.categorias}
+            maxItems={8}
+          />
+          <BarChart
+            titulo="Top metáforas en el filtro actual"
+            data={$conteosFiltrados.metaforas}
+            maxItems={8}
+          />
+          <BarChart
+            titulo="Top canales en el filtro actual"
+            data={$conteosFiltrados.canales}
+            maxItems={6}
+          />
+        </section>
+
+        <!-- Lista de resultados -->
+        <section class="panel panel-lista">
+          <h2>Ejemplos detallados</h2>
+
+          {#if $filtrados.length === 0}
+            <p class="vacio">
+              No se han encontrado ejemplos con esta combinación.
+            </p>
+          {:else}
+            <div class="grid-ejemplos">
+              {#each $filtrados as d}
+                <article class="card">
+                  <h3>{d.ejemplo}</h3>
+
+                  <p class="tags">
+                    <span>{d.categoria}</span> ·
+                    <span>{d.tipo_victima}</span> ·
+                    <span>Metáfora: {d.metafora_dominante}</span> ·
+                    <span>Canal: {d.canal}</span>
+                  </p>
+
+                  <p class="desc">{d.descripcion}</p>
+
+                  <p class="mec">
+                    Mecanismo: <strong>{d.mecanismo}</strong>
+                  </p>
+                </article>
+              {/each}
+            </div>
+          {/if}
+        </section>
       </section>
     </section>
   </section>
@@ -589,8 +522,7 @@
     color: #e5e7eb;
   }
 
-
-    .panel-nube {
+  .panel-nube {
     padding: 0.75rem;
     display: flex;
     flex-direction: column;
@@ -643,5 +575,14 @@
     font-size: 0.8rem;
   }
 
-
+  .resumen-filtros {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    margin-bottom: 0.3rem;
+  }
+  .slider {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+  }
 </style>
