@@ -42,7 +42,7 @@
     <div class="bars">
       {#each topData as d}
         <div class="row">
-          <div class="label" title={d.label}>{d.label}</div>
+          <div class="label" title={d.nombre}>{d.nombre}</div>
           <div class="bar-wrapper">
             <div
               class="bar"
