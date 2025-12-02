@@ -43,9 +43,7 @@
     perfilActivo.set(id);
     ataqueIndex.set(0); // reiniciamos replay
 
-    // ⚠️ FASE SEGURA:
-    // NO tocamos categoria/canal/metafora/mecanismo
-    // solo tocamos el texto de búsqueda
+    
     if (perfil?.presetFiltros) {
       const pf = perfil.presetFiltros;
       setFiltro({
@@ -86,6 +84,15 @@
     if (type === "categorias") setUi({ nubeVista: "categorias" });
     if (type === "mecanismos") setUi({ nubeVista: "mecanismos" });
     if (type === "canales") setUi({ nubeVista: "canales" });
+  }
+
+   function toggleTab(tab) {
+    ui.update((u) => ({
+      ...u,
+      // si vuelves a hacer click en la misma pestaña -> la desactivas
+      nubeVista: u.nubeVista === tab ? null : tab,
+      busquedaTag: ""   // reseteamos el buscador de tags
+    }));
   }
 
   // clic en un tag de la nube (usa la pestaña activa del store ui)
@@ -263,19 +270,21 @@
       </p>
     {/if}
   </section>
-
+ 
   <h1>Mapa de la turba</h1>
+   <section class="">
   <MapaProcreate
     on:selectContinente={handleSelectContinente}
     continenteActivo={continenteActivoId}
   />
+
+</section>
   <MapaMetaforico
     continentes={continentesConfig}
     ejemplos={$filtrados}
     ataquesPerfil={$ataquesPerfil}
     ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
   />
-
   <section class="layout">
     <!-- Columna izquierda: filtros “clásicos” -->
     <aside class="panel filtros">
@@ -356,28 +365,28 @@
           <button
             class:selected={$ui.nubeVista === "metaforas"}
             style={`--tab-color: ${COLORES_TIPO.metaforas}`}
-            on:click={() => setUi({ nubeVista: "metaforas", busquedaTag: "" })}
+            on:click={() => toggleTab("metaforas")}
           >
             Metáforas
           </button>
           <button
             class:selected={$ui.nubeVista === "categorias"}
             style={`--tab-color: ${COLORES_TIPO.categorias}`}
-            on:click={() => setUi({ nubeVista: "categorias", busquedaTag: "" })}
+            on:click={() => toggleTab("categorias")}
           >
             Categorías
           </button>
           <button
             class:selected={$ui.nubeVista === "mecanismos"}
             style={`--tab-color: ${COLORES_TIPO.mecanismos}`}
-            on:click={() => setUi({ nubeVista: "mecanismos", busquedaTag: "" })}
+            on:click={() => toggleTab("mecanismos")}
           >
             Mecanismos
           </button>
           <button
             class:selected={$ui.nubeVista === "canales"}
             style={`--tab-color: ${COLORES_TIPO.canales}`}
-            on:click={() => setUi({ nubeVista: "canales", busquedaTag: "" })}
+            on:click={() => toggleTab("canales")}
           >
             Canales
           </button>
@@ -457,7 +466,7 @@
 
       <section class="panel" style="padding: 0.5rem;">
         <!-- Gráficos -->
-        <section class="grid-charts">
+        <!-- <section class="grid-charts">
           <BarChart
             titulo="Top categorías en el filtro actual"
             data={$conteosFiltrados.categorias}
@@ -473,11 +482,11 @@
             data={$conteosFiltrados.canales}
             maxItems={6}
           />
-        </section>
+        </section> -->
 
         <!-- Lista de resultados -->
         <section class="panel panel-lista">
-          <h2>Ejemplos detallados</h2>
+          <h2>Ejemplos detallados: {$filtrados.length}</h2>
 
           {#if $filtrados.length === 0}
             <p class="vacio">
@@ -918,5 +927,9 @@
     border-color: #f97316;
     box-shadow: 0 0 0 1px #f97316aa;
     background: radial-gradient(circle at top left, #f9731622, #030712);
+  }
+  .mapa{
+    display: flex;
+    flex-direction: row;
   }
 </style>
