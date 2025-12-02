@@ -232,12 +232,7 @@
           Por ahora no hay datos en la combinación de filtros actual.
         </p>
       {:else}
-        <div class="barra-vida">
-          <div
-            class="barra-vida-fill"
-            style={`--vida:${Math.round(($ratioSupervivencia || 0) * 100)}%;`}
-          ></div>
-        </div>
+        
 
         <p class="resumen-perfil">
           Estado:
