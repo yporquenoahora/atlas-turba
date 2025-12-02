@@ -4,10 +4,11 @@
     ataquesPerfil,
     ataqueIndex,
     ataqueActual
-  } from "../stores/store.js"; // ajusta la ruta si tu árbol es distinto
+  } from "../stores/store"; // ajusta la ruta
 
   let playing = false;
   let timer = null;
+  let logContainer;
 
   function stop() {
     playing = false;
@@ -64,10 +65,21 @@
       ? Math.max(0, 1 - golpesRecibidos / vidasPerfil)
       : 0;
 
+  // lista completa de ataques
   $: ataquesMostrados =
     $ataquesPerfil.ataques
       ? $ataquesPerfil.ataques.slice(0, golpesRecibidos)
       : [];
+
+  // índice actual (para marcarlo en el log)
+  $: currentIndex =
+    golpesRecibidos > 0 ? golpesRecibidos - 1 : -1;
+
+  // hacer scroll automático hacia el último ataque mostrado
+  $: if (logContainer && ataquesMostrados.length > 0) {
+    // chat-style: baja al final
+    logContainer.scrollTop = logContainer.scrollHeight;
+  }
 </script>
 
 <section class="panel panel-juego">
@@ -100,6 +112,23 @@
         </button>
       </div>
 
+      <!-- ATAQUE ACTUAL, SOLO UNO EN PRIMER PLANO -->
+      {#if $ataqueActual}
+        <article class="card card-actual">
+          <h3>Ataque actual #{ $ataqueActual.index + 1 }</h3>
+          <p class="titulo-ataque">{ $ataqueActual.ataque.ejemplo }</p>
+          <p class="tags">
+            <span>{ $ataqueActual.ataque.categoria }</span> ·
+            <span>Metáfora: { $ataqueActual.ataque.metafora_dominante }</span> ·
+            <span>{ $ataqueActual.ataque.canal }</span>
+          </p>
+          {#if $ataqueActual.ataque.descripcion}
+            <p class="desc-ataque">{ $ataqueActual.ataque.descripcion }</p>
+          {/if}
+        </article>
+      {/if}
+
+      <!-- BARRA DE VIDA -->
       <div class="barra-vida">
         <div
           class="barra-vida-fill"
@@ -115,9 +144,13 @@
         {/if}
       </p>
 
-      <ul class="log-ataques">
+      <!-- LOG COMPLETO, PERO SCROLLEANDO HASTA EL ÚLTIMO -->
+      <p class="log-titulo-general">
+        Historial de ataques (se va revelando uno a uno):
+      </p>
+      <ul class="log-ataques" bind:this={logContainer}>
         {#each ataquesMostrados as a, i}
-          <li>
+          <li class:actual={i === currentIndex}>
             <span class="log-index">#{i + 1}</span>
             <span class="log-titulo">{a.ejemplo}</span>
             <span class="log-meta">
@@ -137,13 +170,15 @@
 <style>
   .panel-juego {
     padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
   }
 
   .replay-controles {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    margin-bottom: 0.6rem;
   }
 
   .replay-controles button {
@@ -164,11 +199,43 @@
   .replay-info {
     font-size: 0.8rem;
     color: #e5e7eb;
-    margin: 0.2rem 0 0.4rem 0;
+    margin: 0.2rem 0;
+  }
+
+  .card-actual {
+    border-radius: 0.75rem;
+    border: 1px solid #f97316aa;
+    background: radial-gradient(circle at top left, #f9731622, #030712);
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .card-actual h3 {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .titulo-ataque {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .tags {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .desc-ataque {
+    margin: 0.3rem 0 0;
+    font-size: 0.8rem;
   }
 
   .barra-vida {
-    margin: 0.4rem 0;
+    margin: 0.1rem 0 0.2rem 0;
     width: 100%;
     height: 10px;
     border-radius: 999px;
@@ -185,10 +252,16 @@
     transition: width 0.4s ease-out;
   }
 
+  .log-titulo-general {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    margin: 0.3rem 0 0.1rem 0;
+  }
+
   .log-ataques {
     list-style: none;
     padding: 0;
-    margin: 0.5rem 0 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -206,6 +279,13 @@
     border-radius: 0.5rem;
     background: #020617;
     border: 1px solid #111827;
+    opacity: 0.5;
+  }
+
+  .log-ataques li.actual {
+    opacity: 1;
+    border-color: #f97316;
+    background: radial-gradient(circle at top left, #f973161a, #020617);
   }
 
   .log-index {
