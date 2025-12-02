@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import mapaSrc from "../assets/mapaProcreate.png";
+  import mapaSrc from "../assets/mapa.jpeg";
 
   import {
     continentesConfig,
