@@ -2,17 +2,16 @@
   import { createEventDispatcher } from "svelte";
   import mapaSrc from "../assets/mapaProcreate.png";
 
-  // IMPORTAMOS STORES PARA SINCRONIZAR
   import {
     continentesConfig,
     filtrados,
     ataquesPerfil,
     ataqueActual
-  } from "../stores/store.js"; // ajusta la ruta a tu store real
+  } from "../stores/store.js"; // ajusta si se llama atlasStores o similar
 
   const dispatch = createEventDispatcher();
 
-  // si quieres resaltar continente desde fuera
+  // si quieres resaltar continente desde fuera (por ejemplo desde App)
   export let continenteActivo = null;
 
   // Hotspots colocados en % sobre el mapa
@@ -25,10 +24,11 @@
     { id: "economia",        top: "70%", left: "40%" },
     { id: "redes",           top: "30%", left: "35%" },
     { id: "ficcion",         top: "35%", left: "80%" },
-    { id: "cronica_negra",   top: "75%", left: "75%" } // ojo: sin tilde en el id
+    { id: "cronica_negra",   top: "75%", left: "75%" }
   ];
 
-  // helpers: ejemplos y ataques por continente
+  // --- helpers ---
+
   function ejemplosDeContinente(cont) {
     if (!$filtrados || !Array.isArray($filtrados)) return [];
     const matchCats = cont.matchCategorias || [];
@@ -38,13 +38,28 @@
   }
 
   function ataquesDeContinente(cont) {
-    if (!$ataquesPerfil.ataques || !Array.isArray($ataquesPerfil.ataques)) {
+    if (
+      !$ataquesPerfil ||
+      !$ataquesPerfil.ataques ||
+      !Array.isArray($ataquesPerfil.ataques)
+    )
       return [];
-    }
     const matchCats = cont.matchCategorias || [];
     return $ataquesPerfil.ataques.filter(
       (e) => e.categoria && matchCats.includes(e.categoria)
     );
+  }
+
+  function contarPorClave(datos, clave, max = 3) {
+    const mapa = new Map();
+    for (const d of datos) {
+      const k = d[clave];
+      if (!k) continue;
+      mapa.set(k, (mapa.get(k) || 0) + 1);
+    }
+    return Array.from(mapa, ([nombre, valor]) => ({ nombre, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, max);
   }
 
   // continente asociado al ataque actual del replay
@@ -59,7 +74,7 @@
     return cont ? cont.id : null;
   })();
 
-  // stats preparados para la vista
+  // stats por hotspot (ejemplos + ataques)
   $: hotspotStats = hotspots.map((h) => {
     const cont = continentesConfig.find((c) => c.id === h.id);
     if (!cont) {
@@ -80,10 +95,30 @@
     dispatch("selectContinente", { id, continente: cont || null });
   }
 
-  // qué continente consideramos “activo” visualmente:
+  // hover para enseñar los elementos de cada continente
+  let hoveredId = null;
+
+  // qué continente consideramos activo visualmente:
   // 1) el que venga por prop, si existe
   // 2) si no, el del ataque actual
-  $: continenteActivoEfectivo = continenteActivo ?? continenteAtaqueActualId;
+  $: continenteActivoEfectivo = hoveredId ?? continenteActivo ?? continenteAtaqueActualId;
+
+  $: continenteSeleccionado = continenteActivoEfectivo
+    ? continentesConfig.find((c) => c.id === continenteActivoEfectivo) || null
+    : null;
+
+  $: ejemplosSeleccionados = continenteSeleccionado
+    ? ejemplosDeContinente(continenteSeleccionado)
+    : [];
+
+  $: ataquesSeleccionados = continenteSeleccionado
+    ? ataquesDeContinente(continenteSeleccionado)
+    : [];
+
+  // qué “elementos” mostramos del continente
+  $: topMetaforas = contarPorClave(ejemplosSeleccionados, "metafora_dominante", 4);
+  $: topVictimas  = contarPorClave(ejemplosSeleccionados, "tipo_victima", 4);
+  $: topCanales   = contarPorClave(ejemplosSeleccionados, "canal", 4);
 </script>
 
 <div class="mapa-wrapper">
@@ -101,6 +136,8 @@
       class:activo={h.id === continenteActivoEfectivo}
       style={`top:${h.top};left:${h.left};`}
       on:click={() => clickHotspot(h.id)}
+      on:mouseenter={() => (hoveredId = h.id)}
+      on:mouseleave={() => (hoveredId = null)}
       aria-label={`Seleccionar continente ${h.label}`}
       data-ataques={h.ataques}
     >
@@ -114,6 +151,67 @@
     </button>
   {/each}
 </div>
+
+<!-- PANEL DE DETALLE: “QUÉ ELEMENTOS TIENE ESTE CONTINENTE” -->
+<section class="mapa-detalle">
+  {#if continenteSeleccionado}
+    <h3>{continenteSeleccionado.label}</h3>
+    {#if continenteSeleccionado.descripcion}
+      <p class="detalle-desc">{continenteSeleccionado.descripcion}</p>
+    {/if}
+
+    <p class="detalle-resumen">
+      {ejemplosSeleccionados.length} ejemplos ·
+      {ataquesSeleccionados.length} ataques para el perfil actual
+    </p>
+
+    <div class="detalle-grid">
+      <div>
+        <h4>Metáforas dominantes</h4>
+        {#if topMetaforas.length === 0}
+          <p class="detalle-empty">Sin datos con los filtros actuales.</p>
+        {:else}
+          <ul class="chips">
+            {#each topMetaforas as m}
+              <li><span>{m.nombre}</span><small>{m.valor}</small></li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
+      <div>
+        <h4>Tipos de víctima</h4>
+        {#if topVictimas.length === 0}
+          <p class="detalle-empty">Sin datos con los filtros actuales.</p>
+        {:else}
+          <ul class="chips">
+            {#each topVictimas as v}
+              <li><span>{v.nombre}</span><small>{v.valor}</small></li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
+      <div>
+        <h4>Canales</h4>
+        {#if topCanales.length === 0}
+          <p class="detalle-empty">Sin datos con los filtros actuales.</p>
+        {:else}
+          <ul class="chips">
+            {#each topCanales as c}
+              <li><span>{c.nombre}</span><small>{c.valor}</small></li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </div>
+  {:else}
+    <p class="detalle-empty">
+      Pasa el ratón por un continente o deja avanzar el replay para ver qué
+      elementos contiene cada zona del mapa.
+    </p>
+  {/if}
+</section>
 
 <style>
   .mapa-wrapper {
@@ -169,7 +267,6 @@
     background: #22d3ee;
   }
 
-  /* badge con número de ataques / ejemplos */
   .badge {
     position: absolute;
     bottom: -4px;
@@ -193,12 +290,9 @@
     background: #4b5563;
   }
 
-  /* si no hay ataques ni ejemplos → casi apagado */
   .hotspot[data-ataques="0"]:not(:has(.badge)) {
     opacity: 0.25;
   }
-
-  /* ANIMACIONES según tipo */
 
   @keyframes pulse-ataques {
     0%   { transform: scale(1);   box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
@@ -212,13 +306,11 @@
     100% { transform: scale(1);   box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
   }
 
-  /* hotspots con ataques laten en rojo */
   .hotspot[data-ataques]:not([data-ataques="0"]) .pulse {
     animation: pulse-ataques 1.8s ease-out infinite;
     background: #ef4444;
   }
 
-  /* hotspot activo (seleccionado o del ataque actual) */
   .hotspot.activo {
     border-color: #fbbf24;
     background: radial-gradient(circle, #fbbf2440, transparent);
@@ -226,29 +318,86 @@
   }
 
   .hotspot.activo .pulse {
-    animation: ping-actual 1.1s ease-out infinite;
+    animation: ping-actual 1.1s.ease-out infinite;
     background: #facc15;
+  }
+
+  .mapa-detalle {
+    margin-top: 0.6rem;
+    padding: 0.7rem;
+    border-radius: 0.75rem;
+    border: 1px solid #1f2937;
+    background: #020617;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .mapa-detalle h3 {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .detalle-desc {
+    margin: 0;
+    color: #9ca3af;
+    font-size: 0.78rem;
+  }
+
+  .detalle-resumen {
+    margin: 0;
+    color: #e5e7eb;
+  }
+
+  .detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .detalle-grid h4 {
+    margin: 0 0 0.2rem;
+    font-size: 0.78rem;
+  }
+
+  .detalle-empty {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .chips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .chips li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border-radius: 999px;
+    border: 1px solid #374151;
+    padding: 0.05rem 0.5rem;
+    background: #020617;
+  }
+
+  .chips span {
+    font-size: 0.72rem;
+  }
+
+  .chips small {
+    font-size: 0.65rem;
+    color: #9ca3af;
   }
 
   @media (max-width: 768px) {
     .mapa-wrapper {
       border-radius: 0.5rem;
-    }
-
-    .hotspot {
-      width: 26px;
-      height: 26px;
-    }
-
-    .hotspot .pulse {
-      width: 8px;
-      height: 8px;
-    }
-
-    .badge {
-      min-width: 16px;
-      height: 16px;
-      font-size: 0.6rem;
     }
   }
 </style>

@@ -7,7 +7,11 @@
     ataqueActual
   } from "../stores/store.js";
 
+  // Ya no necesitamos props: el mapa se alimenta de los stores
+  // export let ejemplos = [];  // ❌ fuera
+  // export let ataqueActualId = null; // ❌ fuera
 
+  // Ejemplos que caen dentro de un continente
   function ejemplosDeContinente(cont) {
     if (!$filtrados || !Array.isArray($filtrados)) return [];
     const matchCats = cont.matchCategorias || [];
