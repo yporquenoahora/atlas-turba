@@ -55,7 +55,13 @@ export const filtrados = derived(
   [filtros],
   ([$filtros]) => {
     const { categoria, metafora, mecanismo, canal, texto } = $filtros;
-    const txt = texto.toLowerCase().trim();
+
+    // NUEVO: troceamos el texto en términos
+    const terms = texto
+      .toLowerCase()
+      .split(/[;,]/)      // separamos por ; o ,
+      .map(t => t.trim())
+      .filter(Boolean);
 
     return atlas.filter(d => {
       const pasaCategoria =
@@ -73,9 +79,18 @@ export const filtrados = derived(
         (d.tipo_victima || "")
       ).toLowerCase();
 
-      const pasaTexto = txt === "" || cuerpoTexto.includes(txt);
+      // NUEVO: cualquier término que aparezca ya vale
+      const pasaTexto =
+        terms.length === 0 ||
+        terms.some(term => cuerpoTexto.includes(term));
 
-      return pasaCategoria && pasaMetafora && pasaMecanismo && pasaCanal && pasaTexto;
+      return (
+        pasaCategoria &&
+        pasaMetafora &&
+        pasaMecanismo &&
+        pasaCanal &&
+        pasaTexto
+      );
     });
   }
 );
@@ -206,38 +221,17 @@ export const perfilActivo = writable(null); // id de perfil o null
 // helper para comparar ejemplo con el perfil
 function coincideConPerfil(ejemplo, perfil) {
   const { match } = perfil;
-  if (!match) return true; // si no hay match, damos por válido cualquier filtrado
+  if (!match) return true;
 
-  // 1) Coincidencia por categoría
-  if (match.categoria && match.categoria.length) {
-    if (!match.categoria.includes(ejemplo.categoria)) return false;
-  }
-
-  // 2) Coincidencia por canal
-  if (match.canal && match.canal.length) {
-    if (!match.canal.includes(ejemplo.canal)) return false;
-  }
-
-  // 3) Coincidencia por metáfora dominante
-  if (match.metafora_dominante && match.metafora_dominante.length) {
-    if (!match.metafora_dominante.includes(ejemplo.metafora_dominante)) {
-      return false;
-    }
-  }
-
-  // 4) Coincidencia por tipo_victima (si existe)
-  if (match.tipo_victima && match.tipo_victima.length) {
-    if (!match.tipo_victima.includes(ejemplo.tipo_victima)) return false;
-  }
-
-  // 5) Coincidencia por texto en campos largos
+  // Si hay textoIncluye, usamos solo eso
   if (match.textoIncluye && match.textoIncluye.length) {
     const haystack = [
       ejemplo.ejemplo,
       ejemplo.descripcion,
       ejemplo.tipo_victima,
       ejemplo.categoria,
-      ejemplo.canal
+      ejemplo.canal,
+      ejemplo.metafora_dominante
     ]
       .filter(Boolean)
       .join(" ")
@@ -247,11 +241,13 @@ function coincideConPerfil(ejemplo, perfil) {
       haystack.includes(frag.toLowerCase())
     );
 
-    if (!alguno) return false;
+    return alguno;
   }
 
+  // Si no se definió textoIncluye, no filtramos por perfil
   return true;
 }
+
 
 export const ataquesPerfil = derived(
   [filtrados, perfilActivo],
@@ -269,7 +265,7 @@ export const ataquesPerfil = derived(
       return { perfil, ataques: [], total: 0, modo: "sin_datos" };
     }
 
-    // aquí ya usamos SOLO los filtrados + match del perfil
+    // ahora usamos sólo textoIncluye para decidir ataques
     const ataques = $filtrados.filter((e) => coincideConPerfil(e, perfil));
 
     return {
@@ -280,6 +276,7 @@ export const ataquesPerfil = derived(
     };
   }
 );
+
 
 
 // ÍNDICE DEL ATAQUE ACTUAL

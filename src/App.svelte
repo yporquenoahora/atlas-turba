@@ -14,7 +14,7 @@
     canalesUnicos,
     estadoPerfil,
     ataqueActual,
-    ataqueIndex
+    ataqueIndex,
   } from "./stores/store.js";
 
   import { COLORES_TIPO } from "./lib/theme.js";
@@ -34,13 +34,23 @@
   } from "./stores/store.js";
   import MapaProcreate from "./lib/MapaProcreate.svelte";
 
-  function seleccionarPerfil(id) {
-    perfilActivo.set(id);
-    //TODO
-    // Al cambiar perfil cambiar filtros
-    ataqueIndex.set(0);
-  }
+ function seleccionarPerfil(id) {
+  const perfil = perfilesPersonaje.find((p) => p.id === id);
+  perfilActivo.set(id);
+  ataqueIndex.set(0); // reiniciamos replay
 
+  // ⚠️ FASE SEGURA:
+  // NO tocamos categoria/canal/metafora/mecanismo
+  // solo tocamos el texto de búsqueda
+  if (perfil?.presetFiltros) {
+    const pf = perfil.presetFiltros;
+    setFiltro({
+      texto: pf.texto ?? ""   // suponiendo que tu filtro se llama 'texto' o 'busqueda'
+    });
+  }
+}
+
+  
   // ==== helpers para actualizar STORES ====
 
   function setFiltro(partial) {
@@ -161,17 +171,17 @@
     });
   }
 
-  $: console.log($ataqueActual)
+  $: console.log($ataqueActual);
 
   function resetReplay() {
     ataqueIndex.set(0);
   }
 
   $: ataquesIds = new Set(
-  $ataquesPerfil.ataques
-    ? $ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
-    : []
-);
+    $ataquesPerfil.ataques
+      ? $ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
+      : [],
+  );
 </script>
 
 <main class="app">
@@ -198,29 +208,27 @@
       {/each}
     </div>
 
-   {#if $ataquesPerfil.perfil}
+    {#if $ataquesPerfil.perfil}
       <p class="resumen-perfil">
         {$ataquesPerfil.perfil.nombre} tiene
-        <strong>{ $ataquesPerfil.perfil.vidas ?? 3 } vidas</strong> y recibe
+        <strong>{$ataquesPerfil.perfil.vidas ?? 3} vidas</strong> y recibe
         <strong> {$ataquesPerfil.total} ataques</strong> en la vista actual
         {#if $ataquesPerfil.modo === "arcade"}
           <span style="opacity:0.8;">
-            &nbsp;(modo arcade: todos los ejemplos filtrados cuentan como ataque).
+            &nbsp;(modo arcade: todos los ejemplos filtrados cuentan como
+            ataque).
           </span>
           {#each $ataquesPerfil.ataques as atak}
-            <p> {atak.descripcion}</p>
+            <p>{atak.descripcion}</p>
           {/each}
         {/if}
       </p>
 
-  {#if $estadoPerfil === "sin_datos"}
-    <p class="resumen-perfil">
-      Por ahora no hay datos en la combinación de filtros actual.
-    </p>
-  {:else}
-  
-
-
+      {#if $estadoPerfil === "sin_datos"}
+        <p class="resumen-perfil">
+          Por ahora no hay datos en la combinación de filtros actual.
+        </p>
+      {:else}
         <div class="barra-vida">
           <div
             class="barra-vida-fill"
@@ -241,7 +249,6 @@
           {/if}
         </p>
       {/if}
-     
     {:else}
       <p class="resumen-perfil">
         Elige un personaje para ver cómo le afecta la turba en el mapa y en el
@@ -251,24 +258,18 @@
     <section class="panel panel-replay">
       <h2>Replay de ataques</h2>
 
-    {#if $ataquesPerfil.perfil && $ataquesPerfil.total > 0}
-      <p class="replay-info">
-        Ataque {$ataqueActual?.index + 1} de {$ataqueActual?.total}
-        {#if $ataquesPerfil.modo === "arcade"}
-          · modo arcade
-        {/if}
-      </p>
-  <!-- resto igual -->
-{:else if $ataquesPerfil.perfil}
-  <p class="replay-info">
-    No hay ataques registrados para este perfil porque no hay datos en esta vista.
-  </p>
-{:else}
-
-
+      {#if $ataquesPerfil.perfil && $ataquesPerfil.total > 0}
         <p class="replay-info">
-          No hay ataques registrados contra este perfil con los filtros
-          actuales.
+          Ataque {$ataqueActual?.index + 1} de {$ataqueActual?.total}
+          {#if $ataquesPerfil.modo === "arcade"}
+            · modo arcade
+          {/if}
+        </p>
+        <!-- resto igual -->
+      {:else if $ataquesPerfil.perfil}
+        <p class="replay-info">
+          No hay ataques registrados para este perfil porque no hay datos en
+          esta vista.
         </p>
       {:else}
         <p class="replay-info">
@@ -507,7 +508,7 @@
           {:else}
             <div class="grid-ejemplos">
               {#each $filtrados as d}
-                <article class="card">
+                <article class="card" class:ataque={ataquesIds.has(d.id)}>
                   <h3>{d.ejemplo}</h3>
 
                   <p class="tags">
@@ -934,4 +935,11 @@
     background: linear-gradient(90deg, #22c55e, #f97316, #ef4444);
     transition: width 0.25s ease-out;
   }
+
+  .card.ataque {
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316aa;
+  background: radial-gradient(circle at top left, #f9731622, #030712);
+}
+
 </style>
