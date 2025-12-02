@@ -3,7 +3,9 @@
     // ejemplos: lista de ejemplos filtrados ($filtrados)
     // ataquesPerfil: objeto derivado del store { perfil, ataques, total, sobrevive }
 
+    // @ts-ignore
     import { continentesConfig, perfilesPersonaje, ataqueActual } from "../stores/store.js";
+    // @ts-ignore
     import { perfilActivo, ataquesPerfil } from "../stores/store.js";
 
     let continentes = continentesConfig;
@@ -14,7 +16,9 @@
 
     // si ataquesPerfil viene con una lista de ejemplos, creamos un set de ids
     $: ataquesIds = new Set(
+        // @ts-ignore
         ataquesPerfil?.ataques
+            // @ts-ignore
             ? ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
             : [],
     );

@@ -8,10 +8,10 @@ export const perfilesPersonaje = [
     // Filtros automáticos al seleccionar este perfil
     presetFiltros: {
       categoria: "celebridades",   // p.ej. valor en d.categoria
-      metafora: "muñeco_rotor",    // ajusta o deja 'todas'
+      metafora: "muñeco_roto;espectacularización",    // ajusta o deja 'todas'
       mecanismo: "escarnecimiento_publico",
       canal: "television",         // p.ej. 'television', 'magazine_tv'
-      texto: "britney;pop;cantante;diva"
+      texto: "britney;pop;cantante;diva;celebridad"
     },
     // Coincidencia fina dentro de los filtrados
     match: {

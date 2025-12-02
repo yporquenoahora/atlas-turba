@@ -3866,6 +3866,13 @@ export const rawData = [
 ];
 
 
+
+// src/lib/perfilesPersonaje.js
+// Perfiles jugables del atlas. Ajusta los valores de categoria/canal/etc
+// a los que existan realmente en tu CSV.
+
+
+
 export const atlas = rawData.map((d, i) => ({
   id: d.id ?? `ejemplo_${i}`,
   ...d

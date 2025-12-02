@@ -34,7 +34,7 @@ export const filtros = writable({
 export const ui = writable({
   nubeVista: "metaforas",
   busquedaTag: "",
-  minCount: 3
+  minCount: 1
 });
 
 // helpers para usar más cómodo en componentes (opcional)

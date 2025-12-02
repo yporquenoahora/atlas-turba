@@ -25,7 +25,7 @@
   // por si quieres mostrar “top real” (si hay menos items que maxItems)
   $: topReal = Math.min(maxItems, data?.length || 0);
 
-  $:    console.log(data, topData)
+
 </script>
 
 <section class="chart">

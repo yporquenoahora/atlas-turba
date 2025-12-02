@@ -1,6 +1,9 @@
 <script>
   // @ts-nocheck
 
+  import { onDestroy } from "svelte";
+  import { get } from "svelte/store";
+
   import {
     filtros,
     ui,
@@ -33,24 +36,24 @@
     ataquesPorContinente,
   } from "./stores/store.js";
   import MapaProcreate from "./lib/MapaProcreate.svelte";
+  import AttackReplay from "./lib/AttackReplay.svelte";
 
- function seleccionarPerfil(id) {
-  const perfil = perfilesPersonaje.find((p) => p.id === id);
-  perfilActivo.set(id);
-  ataqueIndex.set(0); // reiniciamos replay
+  function seleccionarPerfil(id) {
+    const perfil = perfilesPersonaje.find((p) => p.id === id);
+    perfilActivo.set(id);
+    ataqueIndex.set(0); // reiniciamos replay
 
-  // ⚠️ FASE SEGURA:
-  // NO tocamos categoria/canal/metafora/mecanismo
-  // solo tocamos el texto de búsqueda
-  if (perfil?.presetFiltros) {
-    const pf = perfil.presetFiltros;
-    setFiltro({
-      texto: pf.texto ?? ""   // suponiendo que tu filtro se llama 'texto' o 'busqueda'
-    });
+    // ⚠️ FASE SEGURA:
+    // NO tocamos categoria/canal/metafora/mecanismo
+    // solo tocamos el texto de búsqueda
+    if (perfil?.presetFiltros) {
+      const pf = perfil.presetFiltros;
+      setFiltro({
+        texto: pf.texto ?? "", // suponiendo que tu filtro se llama 'texto' o 'busqueda'
+      });
+    }
   }
-}
 
-  
   // ==== helpers para actualizar STORES ====
 
   function setFiltro(partial) {
@@ -150,7 +153,7 @@
     const { id } = event.detail;
     continenteActivoId = id;
   }
-  $: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo);
+ 
   $: resumenContinenteActivo = $ataquesPorContinente.find(
     (c) => c.continenteId === continenteActivoId,
   );
@@ -171,7 +174,7 @@
     });
   }
 
-  $: console.log($ataqueActual);
+
 
   function resetReplay() {
     ataqueIndex.set(0);
@@ -219,7 +222,7 @@
             ataque).
           </span>
           {#each $ataquesPerfil.ataques as atak}
-            <p>{atak.descripcion}</p>
+            <span>{atak.descripcion}</span>
           {/each}
         {/if}
       </p>
@@ -255,28 +258,8 @@
         atlas.
       </p>
     {/if}
-    <section class="panel panel-replay">
-      <h2>Replay de ataques</h2>
+   <AttackReplay />
 
-      {#if $ataquesPerfil.perfil && $ataquesPerfil.total > 0}
-        <p class="replay-info">
-          Ataque {$ataqueActual?.index + 1} de {$ataqueActual?.total}
-          {#if $ataquesPerfil.modo === "arcade"}
-            · modo arcade
-          {/if}
-        </p>
-        <!-- resto igual -->
-      {:else if $ataquesPerfil.perfil}
-        <p class="replay-info">
-          No hay ataques registrados para este perfil porque no hay datos en
-          esta vista.
-        </p>
-      {:else}
-        <p class="replay-info">
-          Elige un personaje para activar el replay de ataques.
-        </p>
-      {/if}
-    </section>
 
     {#if resumenContinenteActivo}
       <p class="resumen-perfil">
@@ -937,9 +920,8 @@
   }
 
   .card.ataque {
-  border-color: #f97316;
-  box-shadow: 0 0 0 1px #f97316aa;
-  background: radial-gradient(circle at top left, #f9731622, #030712);
-}
-
+    border-color: #f97316;
+    box-shadow: 0 0 0 1px #f97316aa;
+    background: radial-gradient(circle at top left, #f9731622, #030712);
+  }
 </style>
