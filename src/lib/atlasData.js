@@ -1,7 +1,7 @@
 // Archivo generado automáticamente desde Python
 // Datos del Atlas de la Turba Moderna
 
-export const atlas = [
+export const rawData = [
   {
     "ejemplo": "Britney Spears",
     "categoria": "celebridad",
@@ -3864,3 +3864,9 @@ export const atlas = [
     "descripcion": "Presentados como frios y estresados."
   }
 ];
+
+
+export const atlas = rawData.map((d, i) => ({
+  id: d.id ?? `ejemplo_${i}`,
+  ...d
+}));

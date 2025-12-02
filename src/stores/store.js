@@ -203,60 +203,134 @@ export const graphData = derived(
 
 
 export const perfilActivo = writable(null); // id de perfil o null
-
+// helper para comparar ejemplo con el perfil
 function coincideConPerfil(ejemplo, perfil) {
   const { match } = perfil;
-  if (!match) return false;
+  if (!match) return true; // si no hay match, damos por válido cualquier filtrado
 
-  return Object.entries(match).every(([campo, valores]) => {
-    const valorEj = (ejemplo[campo] || "").toString().toLowerCase();
-    return valores
-      .map((v) => v.toString().toLowerCase())
-      .includes(valorEj);
-  });
+  // 1) Coincidencia por categoría
+  if (match.categoria && match.categoria.length) {
+    if (!match.categoria.includes(ejemplo.categoria)) return false;
+  }
+
+  // 2) Coincidencia por canal
+  if (match.canal && match.canal.length) {
+    if (!match.canal.includes(ejemplo.canal)) return false;
+  }
+
+  // 3) Coincidencia por metáfora dominante
+  if (match.metafora_dominante && match.metafora_dominante.length) {
+    if (!match.metafora_dominante.includes(ejemplo.metafora_dominante)) {
+      return false;
+    }
+  }
+
+  // 4) Coincidencia por tipo_victima (si existe)
+  if (match.tipo_victima && match.tipo_victima.length) {
+    if (!match.tipo_victima.includes(ejemplo.tipo_victima)) return false;
+  }
+
+  // 5) Coincidencia por texto en campos largos
+  if (match.textoIncluye && match.textoIncluye.length) {
+    const haystack = [
+      ejemplo.ejemplo,
+      ejemplo.descripcion,
+      ejemplo.tipo_victima,
+      ejemplo.categoria,
+      ejemplo.canal
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const alguno = match.textoIncluye.some((frag) =>
+      haystack.includes(frag.toLowerCase())
+    );
+
+    if (!alguno) return false;
+  }
+
+  return true;
 }
 
 export const ataquesPerfil = derived(
   [filtrados, perfilActivo],
   ([$filtrados, $perfilActivo]) => {
     if (!$perfilActivo) {
-      return { perfil: null, ataques: [], total: 0 };
+      return { perfil: null, ataques: [], total: 0, modo: "sin_perfil" };
     }
 
     const perfil = perfilesPersonaje.find((p) => p.id === $perfilActivo);
     if (!perfil) {
-      return { perfil: null, ataques: [], total: 0 };
+      return { perfil: null, ataques: [], total: 0, modo: "perfil_invalido" };
     }
 
-    const ataques = $filtrados.filter((e) => coincideConPerfil(e, perfil));
-    const total = ataques.length;
+    if (!$filtrados || $filtrados.length === 0) {
+      return { perfil, ataques: [], total: 0, modo: "sin_datos" };
+    }
 
-    return { perfil, ataques, total };
+    // aquí ya usamos SOLO los filtrados + match del perfil
+    const ataques = $filtrados.filter((e) => coincideConPerfil(e, perfil));
+
+    return {
+      perfil,
+      ataques,
+      total: ataques.length,
+      modo: "perfil"
+    };
   }
 );
 
+
+// ÍNDICE DEL ATAQUE ACTUAL
+export const ataqueIndex = writable(0);
+
+// ATAQUE ACTUAL (para el replay)
+export const ataqueActual = derived(
+  [ataquesPerfil, ataqueIndex],
+  ([$ataquesPerfil, $ataqueIndex]) => {
+    const { ataques } = $ataquesPerfil;
+    if (!ataques || ataques.length === 0) return null;
+
+    const idx = Math.min(
+      Math.max(0, $ataqueIndex),
+      ataques.length - 1
+    );
+
+    return {
+      ataque: ataques[idx],
+      index: idx,
+      total: ataques.length
+    };
+  }
+);
 // ratio de supervivencia basado en vidas y número de ataques
 export const ratioSupervivencia = derived(
   ataquesPerfil,
   ($ataquesPerfil) => {
-    const { perfil, total } = $ataquesPerfil;
-    if (!perfil) return null;        // sin perfil, sin barra
-    const vidas = perfil.vidas ?? 3; // por si falta el campo
+    const { perfil, total, modo } = $ataquesPerfil;
+    if (!perfil) return null;
 
-    if (!total) return null;         // 0 ataques => SIN DATOS, NO 100%
+    const vidas = perfil.vidas ?? 3;
 
-    const dano = total;              // cada ataque vale 1 por ahora
+    // Si no hay datos, no hay barra
+    if (modo === "sin_datos" || total === 0) return null;
+
+    const dano = total; // cada ataque vale 1 por ahora
     const ratio = Math.max(0, 1 - dano / vidas);
     return ratio; // 1 = sano, 0 = devorado
   }
 );
+
 
 // estado textual del perfil según el ratio
 export const estadoPerfil = derived(
   [ataquesPerfil, ratioSupervivencia],
   ([$ataquesPerfil, $ratio]) => {
     if (!$ataquesPerfil.perfil) return null;
-    if (!$ataquesPerfil.total) return "sin_datos";
+    if ($ataquesPerfil.modo === "sin_datos" || $ataquesPerfil.total === 0) {
+      return "sin_datos";
+    }
     if ($ratio === null) return "sin_datos";
 
     if ($ratio > 0.66) return "resiste";
@@ -265,6 +339,7 @@ export const estadoPerfil = derived(
     return "devorado";
   }
 );
+
 
 // ataques por continente usando el total (para el mapa)
 export const ataquesPorContinente = derived(

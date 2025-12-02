@@ -12,7 +12,9 @@
     metaforasUnicas,
     mecanismosUnicos,
     canalesUnicos,
-    estadoPerfil
+    estadoPerfil,
+    ataqueActual,
+    ataqueIndex
   } from "./stores/store.js";
 
   import { COLORES_TIPO } from "./lib/theme.js";
@@ -24,16 +26,19 @@
   import MapaMetaforico from "./lib/MapaMetaforico.svelte";
 
   import { continentesConfig, perfilesPersonaje } from "./stores/store.js";
-  import { perfilActivo, 
-    ataquesPerfil, 
-    ratioSupervivencia, 
-    ataquesPorContinente } from "./stores/store.js";
+  import {
+    perfilActivo,
+    ataquesPerfil,
+    ratioSupervivencia,
+    ataquesPorContinente,
+  } from "./stores/store.js";
   import MapaProcreate from "./lib/MapaProcreate.svelte";
-
- 
 
   function seleccionarPerfil(id) {
     perfilActivo.set(id);
+    //TODO
+    // Al cambiar perfil cambiar filtros
+    ataqueIndex.set(0);
   }
 
   // ==== helpers para actualizar STORES ====
@@ -129,19 +134,44 @@
       .includes(($ui.busquedaTag || "").toLowerCase().trim()),
   );
 
-
   let continenteActivoId = null;
-
-
-
 
   function handleSelectContinente(event) {
     const { id } = event.detail;
     continenteActivoId = id;
   }
-$: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo)
-  $: resumenContinenteActivo =
-    $ataquesPorContinente.find((c) => c.continenteId === continenteActivoId);
+  $: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo);
+  $: resumenContinenteActivo = $ataquesPorContinente.find(
+    (c) => c.continenteId === continenteActivoId,
+  );
+
+  // Controles del replay
+  function siguienteAtaque() {
+    ataqueIndex.update((i) => {
+      if (!$ataquesPerfil.total) return 0;
+      return (i + 1) % $ataquesPerfil.total;
+    });
+  }
+
+  function anteriorAtaque() {
+    ataqueIndex.update((i) => {
+      if (!$ataquesPerfil.total) return 0;
+      const total = $ataquesPerfil.total;
+      return (i - 1 + total) % total;
+    });
+  }
+
+  $: console.log($ataqueActual)
+
+  function resetReplay() {
+    ataqueIndex.set(0);
+  }
+
+  $: ataquesIds = new Set(
+  $ataquesPerfil.ataques
+    ? $ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
+    : []
+);
 </script>
 
 <main class="app">
@@ -153,70 +183,110 @@ $: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo)
     </p>
   </header>
 
- <section class="panel panel-perfil">
-  <h2>Simulador de personaje</h2>
+  <section class="panel panel-perfil">
+    <h2>Simulador de personaje</h2>
 
-  <div class="perfiles">
-    {#each perfilesPersonaje as p}
-      <button
-        type="button"
-        class:selected={$perfilActivo === p.id}
-        on:click={() => seleccionarPerfil(p.id)}
-      >
-        {p.nombre}
-      </button>
-    {/each}
-  </div>
+    <div class="perfiles">
+      {#each perfilesPersonaje as p}
+        <button
+          type="button"
+          class:selected={$perfilActivo === p.id}
+          on:click={() => seleccionarPerfil(p.id)}
+        >
+          {p.nombre}
+        </button>
+      {/each}
+    </div>
 
-  {#if $ataquesPerfil.perfil}
-    <p class="resumen-perfil">
-      {$ataquesPerfil.perfil.nombre} tiene
-      <strong>{ $ataquesPerfil.perfil.vidas ?? 3 } vidas</strong> y recibe
-      <strong> {$ataquesPerfil.total} ataques</strong> en la vista actual.
-    </p>
-
-    {#if $estadoPerfil === "sin_datos"}
+   {#if $ataquesPerfil.perfil}
       <p class="resumen-perfil">
-        Por ahora no hay ataques registrados contra este perfil en la combinación de filtros actual.
-      </p>
-    {:else}
-      <div class="barra-vida">
-        <div
-          class="barra-vida-fill"
-          style={`--vida:${Math.round(($ratioSupervivencia || 0) * 100)}%;`}
-        ></div>
-      </div>
-
-      <p class="resumen-perfil">
-        Estado:
-        {#if $estadoPerfil === "resiste"}
-          <strong>resiste</strong> (aguanta bien la campaña).
-        {:else if $estadoPerfil === "tocado"}
-          <strong>tocado</strong> (la narrativa empieza a hacer mella).
-        {:else if $estadoPerfil === "critico"}
-          <strong>crítico</strong> (cualquier ataque extra puede rematarlo).
-        {:else}
-          <strong>devorado</strong> (la turba se lo ha comido mediáticamente).
+        {$ataquesPerfil.perfil.nombre} tiene
+        <strong>{ $ataquesPerfil.perfil.vidas ?? 3 } vidas</strong> y recibe
+        <strong> {$ataquesPerfil.total} ataques</strong> en la vista actual
+        {#if $ataquesPerfil.modo === "arcade"}
+          <span style="opacity:0.8;">
+            &nbsp;(modo arcade: todos los ejemplos filtrados cuentan como ataque).
+          </span>
+          {#each $ataquesPerfil.ataques as atak}
+            <p> {atak.descripcion}</p>
+          {/each}
         {/if}
       </p>
-    {/if}
+
+  {#if $estadoPerfil === "sin_datos"}
+    <p class="resumen-perfil">
+      Por ahora no hay datos en la combinación de filtros actual.
+    </p>
   {:else}
-    <p class="resumen-perfil">
-      Elige un personaje para ver cómo le afecta la turba en el mapa y en el atlas.
-    </p>
-  {/if}
-
-  {#if resumenContinenteActivo}
-    <p class="resumen-perfil">
-      En <strong>{resumenContinenteActivo.label}</strong> este perfil recibe
-      <strong>{resumenContinenteActivo.total}</strong> ataques.
-    </p>
-  {/if}
-</section>
+  
 
 
-<h1>Mapa de la turba</h1>
- <MapaProcreate
+        <div class="barra-vida">
+          <div
+            class="barra-vida-fill"
+            style={`--vida:${Math.round(($ratioSupervivencia || 0) * 100)}%;`}
+          ></div>
+        </div>
+
+        <p class="resumen-perfil">
+          Estado:
+          {#if $estadoPerfil === "resiste"}
+            <strong>resiste</strong> (aguanta bien la campaña).
+          {:else if $estadoPerfil === "tocado"}
+            <strong>tocado</strong> (la narrativa empieza a hacer mella).
+          {:else if $estadoPerfil === "critico"}
+            <strong>crítico</strong> (cualquier ataque extra puede rematarlo).
+          {:else}
+            <strong>devorado</strong> (la turba se lo ha comido mediáticamente).
+          {/if}
+        </p>
+      {/if}
+     
+    {:else}
+      <p class="resumen-perfil">
+        Elige un personaje para ver cómo le afecta la turba en el mapa y en el
+        atlas.
+      </p>
+    {/if}
+    <section class="panel panel-replay">
+      <h2>Replay de ataques</h2>
+
+    {#if $ataquesPerfil.perfil && $ataquesPerfil.total > 0}
+      <p class="replay-info">
+        Ataque {$ataqueActual?.index + 1} de {$ataqueActual?.total}
+        {#if $ataquesPerfil.modo === "arcade"}
+          · modo arcade
+        {/if}
+      </p>
+  <!-- resto igual -->
+{:else if $ataquesPerfil.perfil}
+  <p class="replay-info">
+    No hay ataques registrados para este perfil porque no hay datos en esta vista.
+  </p>
+{:else}
+
+
+        <p class="replay-info">
+          No hay ataques registrados contra este perfil con los filtros
+          actuales.
+        </p>
+      {:else}
+        <p class="replay-info">
+          Elige un personaje para activar el replay de ataques.
+        </p>
+      {/if}
+    </section>
+
+    {#if resumenContinenteActivo}
+      <p class="resumen-perfil">
+        En <strong>{resumenContinenteActivo.label}</strong> este perfil recibe
+        <strong>{resumenContinenteActivo.total}</strong> ataques.
+      </p>
+    {/if}
+  </section>
+
+  <h1>Mapa de la turba</h1>
+  <MapaProcreate
     on:selectContinente={handleSelectContinente}
     continenteActivo={continenteActivoId}
   />
@@ -224,6 +294,7 @@ $: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo)
     continentes={continentesConfig}
     ejemplos={$filtrados}
     ataquesPerfil={$ataquesPerfil}
+    ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
   />
 
   <section class="layout">
@@ -814,54 +885,53 @@ $: console.log("ataques perfil: ", $ataquesPerfil, $perfilActivo)
       max-width: 100%;
     }
   }
-.panel-perfil {
-  padding: 0.75rem;
-}
+  .panel-perfil {
+    padding: 0.75rem;
+  }
 
-.perfiles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-}
+  .perfiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+  }
 
-.perfiles button {
-  border-radius: 999px;
-  border: 1px solid #374151;
-  background: #020617;
-  color: #e5e7eb;
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  cursor: pointer;
-}
+  .perfiles button {
+    border-radius: 999px;
+    border: 1px solid #374151;
+    background: #020617;
+    color: #e5e7eb;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+  }
 
-.perfiles button.selected {
-  border-color: #f97316;
-  background: radial-gradient(circle at top left, #f9731633, #020617);
-}
+  .perfiles button.selected {
+    border-color: #f97316;
+    background: radial-gradient(circle at top left, #f9731633, #020617);
+  }
 
-.resumen-perfil {
-  font-size: 0.8rem;
-  color: #e5e7eb;
-  margin: 0.25rem 0 0;
-}
+  .resumen-perfil {
+    font-size: 0.8rem;
+    color: #e5e7eb;
+    margin: 0.25rem 0 0;
+  }
 
-.barra-vida {
-  margin: 0.4rem 0;
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: #020617;
-  border: 1px solid #1f2937;
-  overflow: hidden;
-}
+  .barra-vida {
+    margin: 0.4rem 0;
+    width: 100%;
+    height: 10px;
+    border-radius: 999px;
+    background: #020617;
+    border: 1px solid #1f2937;
+    overflow: hidden;
+  }
 
-.barra-vida-fill {
-  height: 100%;
-  width: var(--vida, 0%);
-  max-width: 100%;
-  background: linear-gradient(90deg, #22c55e, #f97316, #ef4444);
-  transition: width 0.25s ease-out;
-}
-
+  .barra-vida-fill {
+    height: 100%;
+    width: var(--vida, 0%);
+    max-width: 100%;
+    background: linear-gradient(90deg, #22c55e, #f97316, #ef4444);
+    transition: width 0.25s ease-out;
+  }
 </style>

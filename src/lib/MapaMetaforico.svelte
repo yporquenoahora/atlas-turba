@@ -3,11 +3,13 @@
     // ejemplos: lista de ejemplos filtrados ($filtrados)
     // ataquesPerfil: objeto derivado del store { perfil, ataques, total, sobrevive }
 
-    import { continentesConfig, perfilesPersonaje } from "../stores/store.js";
+    import { continentesConfig, perfilesPersonaje, ataqueActual } from "../stores/store.js";
     import { perfilActivo, ataquesPerfil } from "../stores/store.js";
 
     let continentes = continentesConfig;
     export let ejemplos = [];
+
+    export let ataqueActualId = null; // 👈 nuevo
     //export let ataquesPerfil = null;
 
     // si ataquesPerfil viene con una lista de ejemplos, creamos un set de ids
@@ -17,7 +19,6 @@
             : [],
     );
 
-    // función helper: ejemplos que “viven” en un continente
     function ejemplosDeContinente(cont) {
         if (!Array.isArray(ejemplos)) return [];
         const matchCats = cont.matchCategorias || [];
@@ -41,6 +42,7 @@
                         <div
                             class="ciudad"
                             class:afectada={ataquesIds.has(e.id)}
+                            class:actual={ataqueActualId === e.id}
                             title={e.ejemplo}
                         >
                             <span class="punto"></span>
@@ -131,5 +133,28 @@
         .world-map {
             grid-template-columns: 1fr;
         }
+    }
+
+    .ciudad {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        opacity: 0.65;
+        min-width: 0;
+    }
+
+    .ciudad.afectada {
+        opacity: 1;
+        font-weight: 600;
+    }
+
+    .ciudad.actual {
+        opacity: 1;
+        font-weight: 700;
+    }
+
+    .ciudad.actual .punto {
+        background: #22c55e;
+        box-shadow: 0 0 0 4px #22c55e66;
     }
 </style>
