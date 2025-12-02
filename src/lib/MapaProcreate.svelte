@@ -318,7 +318,7 @@
   }
 
   .hotspot.activo .pulse {
-    animation: ping-actual 1.1s.ease-out infinite;
+    animation: ping-actual 1.1s ease-out infinite;
     background: #facc15;
   }
 
