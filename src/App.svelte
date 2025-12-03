@@ -38,12 +38,23 @@
   import MapaProcreate from "./lib/MapaProcreate.svelte";
   import AttackReplay from "./lib/AttackReplay.svelte";
 
+  import { graphCircular } from "./stores/store.js";
+  import CircularForceGraph from "./lib/CircularForceGraph.svelte";
+
+  import MapaRutasContinentes from "./lib/MapaRutas.svelte";
+  // opcional: guardar la ruta seleccionada en App si quieres sincronizar con otros módulos
+  let rutaSeleccionada = null;
+
+  function handleSelectRuta(event) {
+    rutaSeleccionada = event.detail.ruta;
+    // aquí podrías, por ejemplo, filtrar lista de ejemplos según esa ruta, etc.
+  }
+
   function seleccionarPerfil(id) {
     const perfil = perfilesPersonaje.find((p) => p.id === id);
     perfilActivo.set(id);
     ataqueIndex.set(0); // reiniciamos replay
 
-    
     if (perfil?.presetFiltros) {
       const pf = perfil.presetFiltros;
       setFiltro({
@@ -86,12 +97,12 @@
     if (type === "canales") setUi({ nubeVista: "canales" });
   }
 
-   function toggleTab(tab) {
+  function toggleTab(tab) {
     ui.update((u) => ({
       ...u,
       // si vuelves a hacer click en la misma pestaña -> la desactivas
       nubeVista: u.nubeVista === tab ? null : tab,
-      busquedaTag: ""   // reseteamos el buscador de tags
+      busquedaTag: "", // reseteamos el buscador de tags
     }));
   }
 
@@ -160,7 +171,7 @@
     const { id } = event.detail;
     continenteActivoId = id;
   }
- 
+
   $: resumenContinenteActivo = $ataquesPorContinente.find(
     (c) => c.continenteId === continenteActivoId,
   );
@@ -180,8 +191,6 @@
       return (i - 1 + total) % total;
     });
   }
-
-
 
   function resetReplay() {
     ataqueIndex.set(0);
@@ -239,8 +248,6 @@
           Por ahora no hay datos en la combinación de filtros actual.
         </p>
       {:else}
-        
-
         <p class="resumen-perfil">
           Estado:
           {#if $estadoPerfil === "resiste"}
@@ -260,8 +267,7 @@
         atlas.
       </p>
     {/if}
-   <AttackReplay />
-
+    <AttackReplay />
 
     {#if resumenContinenteActivo}
       <p class="resumen-perfil">
@@ -270,27 +276,41 @@
       </p>
     {/if}
   </section>
- 
-  <h1>Mapa de la turba</h1>
-   <section class="">
-  <MapaProcreate
-    on:selectContinente={handleSelectContinente}
-    continenteActivo={continenteActivoId}
-  />
 
-</section>
-  <MapaMetaforico
+  
+  <section class="panel">
+    <!--  <MapaProcreate
+      on:selectContinente={handleSelectContinente}
+      continenteActivo={continenteActivoId}
+    /> -->
+   
+    <section class="panel panel-mapa-top">
+      <div class="map-grid">
+        <section class="map-cell">
+          <CircularForceGraph
+            nodes={$graphCircular.nodes}
+            links={$graphCircular.links}
+            activeTipo={$ui.nubeVista || "metaforas"}
+          />
+        </section>
+        <section class="map-cell">
+          <h2 class="map-title">Tráfico de ataques entre continentes</h2>
+          <MapaRutasContinentes on:selectRuta={handleSelectRuta} />
+        </section>
+      </div>
+    </section>
+  </section>
+  <section class="panel panel-mapa-metaforico"></section>
+ <!--  <MapaMetaforico
     continentes={continentesConfig}
     ejemplos={$filtrados}
     ataquesPerfil={$ataquesPerfil}
     ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
-  />
-  <section class="layout">
-    <!-- Columna izquierda: filtros “clásicos” -->
-    <aside class="panel filtros">
+  /> -->
+<aside class="panel filtros">
       <h2>Filtros básicos</h2>
 
-      <label>
+     <!--  <label>
         Categoría
         <select
           bind:value={$filtros.categoria}
@@ -301,9 +321,9 @@
             <option value={c}>{c}</option>
           {/each}
         </select>
-      </label>
+      </label> -->
 
-      <label>
+     <!--  <label>
         Metáfora dominante
         <select
           bind:value={$filtros.metafora}
@@ -314,9 +334,9 @@
             <option value={m}>{m}</option>
           {/each}
         </select>
-      </label>
+      </label> -->
 
-      <label>
+    <!--   <label>
         Mecanismo
         <select
           bind:value={$filtros.mecanismo}
@@ -327,8 +347,8 @@
             <option value={m}>{m}</option>
           {/each}
         </select>
-      </label>
-
+      </label> -->
+<!-- 
       <label>
         Canal
         <select
@@ -340,7 +360,7 @@
             <option value={c}>{c}</option>
           {/each}
         </select>
-      </label>
+      </label> -->
 
       <label>
         Buscar texto
@@ -355,12 +375,15 @@
       <p class="resumen">
         {$filtrados.length} ejemplos coinciden con la combinación actual.
       </p>
-    </aside>
+    </aside> 
 
+  <section class="layout">
+    <!-- Columna izquierda: filtros “clásicos” -->
+     
     <!-- Columna derecha: nubes + gráficos + tarjetas -->
     <section class="col-derecha">
       <!-- Nubes de conceptos -->
-      <section class="panel panel-nube">
+      <section class="panel panel-nube area-nube">
         <div class="tabs">
           <button
             class:selected={$ui.nubeVista === "metaforas"}
@@ -416,7 +439,7 @@
         <ConceptCloud items={nubeActual} on:toggle={handleToggleTag} />
       </section>
 
-      <section class="panel" style="padding: 0.5rem;">
+      <section class="panel panel-force area-circular" style="padding: 0.5rem;">
         <div class="resumen-filtros">
           {resumenFiltros || "Sin filtros activos"}
         </div>
@@ -463,8 +486,8 @@
           on:selectConcept={handleSelectConcept}
         />
       </section>
-
-      <section class="panel" style="padding: 0.5rem;">
+ </section>
+      <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
         <!-- Gráficos -->
         <!-- <section class="grid-charts">
           <BarChart
@@ -485,7 +508,7 @@
         </section> -->
 
         <!-- Lista de resultados -->
-        <section class="panel panel-lista">
+        <section class="panel panel-lista area-lista">
           <h2>Ejemplos detallados: {$filtrados.length}</h2>
 
           {#if $filtrados.length === 0}
@@ -515,7 +538,7 @@
             </div>
           {/if}
         </section>
-      </section>
+     
     </section>
   </section>
 </main>
@@ -562,8 +585,8 @@
 
   .layout {
     margin-top: 1.5rem;
-    display: grid;
-    grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
+   display: flex;
+   flex-direction: column;
     gap: 1.5rem;
   }
 
@@ -616,6 +639,8 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    display: grid;
+  grid-template-columns: .7fr 1.3fr;
   }
 
   .grid-nubes {
@@ -669,23 +694,23 @@
 
   .card h3 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.75rem;
   }
 
   .tags {
     margin: 0;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: #9ca3af;
   }
 
   .desc {
     margin: 0.3rem 0 0;
-    font-size: 0.85rem;
+    font-size: 0.55rem;
   }
 
   .mec {
     margin: 0.2rem 0 0;
-    font-size: 0.8rem;
+    font-size: 0.5rem;
     color: #e5e7eb;
   }
 
@@ -760,8 +785,10 @@
     }
 
     .layout {
-      grid-template-columns: 1fr;
+     /*  grid-template-columns: 1fr; */
       gap: 1rem;
+      display: flex;
+      flex-direction: row;
     }
 
     .col-derecha {
@@ -779,8 +806,11 @@
     .layout {
       margin-top: 1.5rem;
       display: grid;
-      grid-template-columns: minmax(260px, 280px) minmax(0, 1fr);
+     /*  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr); */
       gap: 1.5rem;
+        display: flex;
+      flex-direction: row;
+    }
     }
 
     /* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
@@ -823,7 +853,7 @@
     .force-graph {
       height: 260px;
     }
-  }
+  
 
   @media (max-width: 400px) {
     .app {
@@ -928,8 +958,139 @@
     box-shadow: 0 0 0 1px #f97316aa;
     background: radial-gradient(circle at top left, #f9731622, #030712);
   }
-  .mapa{
+  .mapa {
     display: flex;
     flex-direction: row;
   }
+
+  .col-derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Layout de escritorio: grid para evitar scroll loco */
+  @media (min-width: 1024px) {
+    .col-derecha {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr);
+      grid-template-rows: auto auto auto;
+      grid-template-areas:
+        "nube circular"
+        "charts charts"
+        "lista lista";
+      gap: 0.9rem;
+      align-items: start;
+    }
+
+    .area-nube {
+      grid-area: nube;
+    }
+
+    .area-circular {
+      grid-area: circular;
+    }
+
+    .area-charts {
+      grid-area: charts;
+    }
+
+    .area-lista {
+      grid-area: lista;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    /* recortar un poco alturas internas para que todo quepa mejor */
+    .grid-charts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .panel-nube {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+  }
+  .panel-mapa-top {
+  padding: 0.75rem;
+}
+
+.map-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.map-cell {
+  min-height: 220px;
+  /* dejamos crecer un poco más y no cortamos el svg */
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+
+.map-title {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+/* En móvil lo dejamos en columna para que respire */
+@media (max-width: 900px) {
+  .map-grid {
+    grid-template-columns: 1fr;
+  }
+  .map-cell {
+    max-height: none;
+  }
+}
+
+/* Layout de escritorio: grid compacto en la columna derecha */
+@media (min-width: 1024px) {
+  .col-derecha {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+   /*  grid-template-rows: minmax(0, 260px) minmax(0, 320px); */
+    grid-template-areas:
+      "nube circular"
+      "lista lista";
+    gap: 0.75rem;
+    align-items: start;
+  }
+
+  .area-nube {
+    grid-area: nube;
+  }
+
+  .area-circular {
+    grid-area: circular;
+  }
+
+  .area-lista {
+    grid-area: lista;
+  }
+
+  .panel-nube {
+     max-height: fit-content; 
+    overflow-y: auto;
+  }
+
+  .panel-force {
+    /* max-height: 260px; */
+    overflow: hidden;
+  }
+
+  .panel-lista.area-lista {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+}
+@media (min-width: 1024px) {
+  .panel-mapa-metaforico {
+    margin-top: 0.75rem;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+}
+
+
 </style>

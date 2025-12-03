@@ -7,7 +7,6 @@ import { continentesConfig } from "../lib/continentesConfig.js";
 
 export { continentesConfig, perfilesPersonaje }; // para reexportar si quieres
 
-
 function contarPorClave(datos, clave) {
     const mapa = new Map();
     for (const d of datos) {
@@ -19,7 +18,6 @@ function contarPorClave(datos, clave) {
         .sort((a, b) => b.valor - a.valor);
 }
 
-// ---------- STORES BÁSICOS DE ESTADO ----------
 
 // filtros “semánticos”
 export const filtros = writable({
@@ -228,6 +226,7 @@ export const graphData = derived(
 
 
 export const perfilActivo = writable(null); // id de perfil o null
+
 // helper para comparar ejemplo con el perfil
 function coincideConPerfil(ejemplo, perfil) {
     const { match } = perfil;
@@ -287,6 +286,149 @@ export const ataquesPerfil = derived(
     }
 );
 
+
+// --- helpers para rutas entre continentes ---
+// --- helpers para rutas entre continentes ---
+// ----------------- HELPERS DE CONTINENTE -----------------
+
+function normaliza(str) {
+  return str
+    .toLowerCase()
+    .normalize("NFD")                // separa acentos
+    .replace(/\p{Diacritic}/gu, ""); // elimina acentos
+}
+
+// Usa las matchCategorias del propio continentesConfig
+function continenteDeCategoria(categoria) {
+  if (!categoria) return null;
+  for (const cont of continentesConfig) {
+    const lista = cont.matchCategorias || [];
+    if (lista.includes(categoria)) {
+      return cont.id;
+    }
+  }
+  return null;
+}
+
+export function continenteDeCanal(canal) {
+  if (!canal) return null;
+  const c = normaliza(canal);
+
+  // adapta estas reglas a tus valores reales de "canal"
+  if (c.includes("tele") || c.includes("tv") || c.includes("plat") || c.includes("reality")) {
+    return "espectaculo";
+  }
+  if (c.includes("red") || c.includes("twitter") || c.includes("tiktok") || c.includes("instagram") || c.includes("social")) {
+    return "redes";
+  }
+  if (c.includes("prensa") || c.includes("sucesos") || c.includes("true crime") || c.includes("cronica")) {
+    return "cronica_negra";
+  }
+  if (c.includes("podcast") || c.includes("divulg") || c.includes("documental")) {
+    return "ciencia";
+  }
+  if (c.includes("economia") || c.includes("finanzas") || c.includes("empresa")) {
+    return "economia";
+  }
+
+  // sin mapa claro → ya veremos si la categoria ayuda
+  return null;
+}
+
+export function continenteDeVictima(tipo) {
+  if (!tipo) return null;
+  const t = normaliza(tipo);
+
+  if (t.includes("cient") || t.includes("investig") || t.includes("experto")) {
+    return "ciencia";
+  }
+  if (t.includes("artista") || t.includes("cantante") || t.includes("estrella") || t.includes("celebridad") || t.includes("influencer")) {
+    return "espectaculo";
+  }
+  if (t.includes("refug") || t.includes("migr") || t.includes("minoria") || t.includes("extranj") || t.includes("bestiario")) {
+    return "bestiario";
+  }
+  if (t.includes("politic") || t.includes("activista") || t.includes("manifestante") || t.includes("militante")) {
+    return "pueblo_politico";
+  }
+  if (t.includes("empres") || t.includes("banqu") || t.includes("rico") || t.includes("multinacional")) {
+    return "economia";
+  }
+
+  return null;
+}
+
+// --- rutas de ataque entre continentes, derivadas de ataquesPerfil ---
+export const rutasContinentes = derived(
+  [filtrados, ataquesPerfil],
+  ([$filtrados, $ataquesPerfil]) => {
+    const rutasMap = new Map();
+
+    const ataquesIds = new Set(
+      $ataquesPerfil.ataques
+        ? $ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
+        : []
+    );
+
+    for (const d of $filtrados || []) {
+      // ORIGEN: canal si se puede, si no categoría
+      const from =
+        continenteDeCanal(d.canal) ||
+        continenteDeCategoria(d.categoria);
+
+      // DESTINO: tipo_victima si se puede, si no categoría
+      const to =
+        continenteDeVictima(d.tipo_victima) ||
+        continenteDeCategoria(d.categoria);
+
+      if (!from || !to || from === to) continue;
+
+      const key = `${from}->${to}`;
+      const prev = rutasMap.get(key) || {
+        from,
+        to,
+        count: 0,
+        countAtaquesPerfil: 0,
+        mecanismos: new Map(),
+        metaforas: new Map()
+      };
+
+      prev.count += 1;
+
+      if (d.id && ataquesIds.has(d.id)) {
+        prev.countAtaquesPerfil += 1;
+      }
+
+      if (d.mecanismo) {
+        prev.mecanismos.set(
+          d.mecanismo,
+          (prev.mecanismos.get(d.mecanismo) || 0) + 1
+        );
+      }
+      if (d.metafora_dominante) {
+        prev.metaforas.set(
+          d.metafora_dominante,
+          (prev.metaforas.get(d.metafora_dominante) || 0) + 1
+        );
+      }
+
+      rutasMap.set(key, prev);
+    }
+
+    return Array.from(rutasMap.values()).map((r) => ({
+      from: r.from,
+      to: r.to,
+      count: r.count,
+      countAtaquesPerfil: r.countAtaquesPerfil,
+      topMecanismo:
+        Array.from(r.mecanismos.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+        null,
+      topMetafora:
+        Array.from(r.metaforas.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+        null
+    }));
+  }
+);
 
 
 // ÍNDICE DEL ATAQUE ACTUAL
@@ -348,6 +490,52 @@ export const estadoPerfil = derived(
 );
 
 
+// Cada "ataque" se convierte en un arco entre continentes (si podemos inferirlos)
+// Si el perfil actual no tiene ataques, usamos todos los $filtrados como base visual.
+
+export const arcosContinentes = derived(
+  [filtrados, ataquesPerfil],
+  ([$filtrados, $ataquesPerfil]) => {
+    const base =
+      $ataquesPerfil.ataques && $ataquesPerfil.ataques.length > 0
+        ? $ataquesPerfil.ataques
+        : $filtrados;
+
+    const arcos = [];
+
+    base.forEach((d, idx) => {
+      const from =
+        continenteDeCanal(d.canal) ||
+        continenteDeCategoria(d.categoria);
+      const to =
+        continenteDeVictima(d.tipo_victima) ||
+        continenteDeCategoria(d.categoria);
+
+      if (!from || !to || from === to) return;
+
+      const esPerfil =
+        $ataquesPerfil.ataques &&
+        $ataquesPerfil.ataques.some((a) => a.id === d.id);
+
+      arcos.push({
+        id: d.id ?? `arc-${idx}`,
+        from,
+        to,
+        ejemplo: d.ejemplo,
+        descripcion: d.descripcion,
+        mecanismo: d.mecanismo,
+        metafora: d.metafora_dominante,
+        canal: d.canal,
+        tipo_victima: d.tipo_victima,
+        esPerfil
+      });
+    });
+
+    return arcos;
+  }
+);
+
+
 // ataques por continente usando el total (para el mapa)
 export const ataquesPorContinente = derived(
     ataquesPerfil,
@@ -368,4 +556,155 @@ export const ataquesPorContinente = derived(
             };
         });
     }
+);
+
+// --- RUTAS AGREGADAS ENTRE CONTINENTES ---
+// Cada ruta agrupa todos los ataques/ejemplos que van de un continente a otro,
+// con distribución por mecanismo y metáfora, y lista de casos.
+
+export const rutasEntreContinentes = derived(
+  [filtrados],
+  ([$filtrados]) => {
+    const rutasMap = new Map();
+
+    for (const d of $filtrados || []) {
+      const from =
+        continenteDeCanal(d.canal) ||
+        continenteDeCategoria(d.categoria);
+      const to =
+        continenteDeVictima(d.tipo_victima) ||
+        continenteDeCategoria(d.categoria);
+
+      if (!from || !to || from === to) continue;
+
+      const key = `${from}->${to}`;
+      const prev = rutasMap.get(key) || {
+        from,
+        to,
+        total: 0,
+        porMecanismo: new Map(),
+        porMetafora: new Map(),
+        casos: []
+      };
+
+      prev.total += 1;
+
+      if (d.mecanismo) {
+        prev.porMecanismo.set(
+          d.mecanismo,
+          (prev.porMecanismo.get(d.mecanismo) || 0) + 1
+        );
+      }
+
+      if (d.metafora_dominante) {
+        prev.porMetafora.set(
+          d.metafora_dominante,
+          (prev.porMetafora.get(d.metafora_dominante) || 0) + 1
+        );
+      }
+
+      prev.casos.push({
+        id: d.id,
+        ejemplo: d.ejemplo,
+        descripcion: d.descripcion,
+        mecanismo: d.mecanismo,
+        metafora: d.metafora_dominante,
+        canal: d.canal,
+        tipo_victima: d.tipo_victima,
+        categoria: d.categoria
+      });
+
+      rutasMap.set(key, prev);
+    }
+
+    // lo convertimos a array "bonito"
+    return Array.from(rutasMap.values()).map((r) => {
+      const mecanismosOrdenados = Array.from(r.porMecanismo.entries())
+        .sort((a, b) => b[1] - a[1]);
+      const metaforasOrdenadas = Array.from(r.porMetafora.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+      return {
+        from: r.from,
+        to: r.to,
+        total: r.total,
+        porMecanismo: mecanismosOrdenados, // [ [mec, count], ... ]
+        porMetafora: metaforasOrdenadas,   // [ [meta, count], ... ]
+        mecanismoDominante: mecanismosOrdenados[0]?.[0] || null,
+        metaforaDominante: metaforasOrdenadas[0]?.[0] || null,
+        casos: r.casos
+      };
+    });
+  }
+);
+
+
+// ---------- GRAFO CIRCULAR DE COOCURRENCIA ENTRE FILTROS ----------
+// Cada nodo = un valor de filtro (categoria/metafora/mecanismo/canal)
+// Cada link = dos filtros que aparecen en el mismo ejemplo (coocurrencia)
+
+
+
+// ---------- GRAFO CIRCULAR DE COOCURRENCIA ENTRE FILTROS ----------
+// Cada nodo = un valor de filtro (categoria/metafora/mecanismo/canal)
+// Cada link = dos filtros que aparecen en el mismo ejemplo (coocurrencia)
+
+export const graphCircular = derived(
+  filtrados,
+  ($filtrados) => {
+    const nodesMap = new Map();
+    const linksMap = new Map();
+
+    function addNode(tipo, key) {
+      if (!key) return null;
+      const id = `${tipo}:${key}`;
+      if (!nodesMap.has(id)) {
+        nodesMap.set(id, {
+          id,
+          tipo,        // "categoria" | "metafora" | "mecanismo" | "canal"
+          label: key,
+          degree: 0
+        });
+      }
+      return id;
+    }
+
+    function addLink(a, b) {
+      if (!a || !b || a === b) return;
+      const key = a < b ? `${a}||${b}` : `${b}||${a}`;
+      const prev = linksMap.get(key) || { source: a, target: b, weight: 0 };
+      prev.weight += 1;
+      linksMap.set(key, prev);
+    }
+
+    // Recorremos ejemplos filtrados y conectamos sus filtros internos
+    for (const d of $filtrados || []) {
+      const idCat  = addNode("categoria", d.categoria);
+      const idMet  = addNode("metafora", d.metafora_dominante);
+      const idMec  = addNode("mecanismo", d.mecanismo);
+      const idCan  = addNode("canal", d.canal);
+
+      const presentes = [idCat, idMet, idMec, idCan].filter(Boolean);
+
+      // todas las parejas que coaparecen en el mismo ejemplo
+      for (let i = 0; i < presentes.length; i++) {
+        for (let j = i + 1; j < presentes.length; j++) {
+          addLink(presentes[i], presentes[j]);
+        }
+      }
+    }
+
+    // calculamos degree aproximado
+    const links = Array.from(linksMap.values());
+    for (const l of links) {
+      const a = nodesMap.get(l.source);
+      const b = nodesMap.get(l.target);
+      if (a) a.degree += l.weight;
+      if (b) b.degree += l.weight;
+    }
+
+    const nodes = Array.from(nodesMap.values());
+
+    return { nodes, links };
+  }
 );
