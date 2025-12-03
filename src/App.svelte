@@ -7,6 +7,9 @@
   import {
     filtros,
     ui,
+    effectiveMinCount,
+    filtradosVisibles,
+    maxMinCountPosible,
     filtrados,
     conteosFiltrados,
     nubes,
@@ -165,6 +168,9 @@
       .includes(($ui.busquedaTag || "").toLowerCase().trim()),
   );
 
+  $: totalEjemplos = $filtrados.length;
+  $: totalVisibles = $filtradosVisibles.length;
+
   let continenteActivoId = null;
 
   function handleSelectContinente(event) {
@@ -277,13 +283,12 @@
     {/if}
   </section>
 
-  
   <section class="panel">
     <!--  <MapaProcreate
       on:selectContinente={handleSelectContinente}
       continenteActivo={continenteActivoId}
     /> -->
-   
+
     <section class="panel panel-mapa-top">
       <div class="map-grid">
         <section class="map-cell">
@@ -301,16 +306,16 @@
     </section>
   </section>
   <section class="panel panel-mapa-metaforico"></section>
- <!--  <MapaMetaforico
+  <!--  <MapaMetaforico
     continentes={continentesConfig}
     ejemplos={$filtrados}
     ataquesPerfil={$ataquesPerfil}
     ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
   /> -->
-<aside class="panel filtros">
-      <h2>Filtros básicos</h2>
+  <aside class="panel filtros">
+    <h2>Filtros básicos</h2>
 
-     <!--  <label>
+    <!--  <label>
         Categoría
         <select
           bind:value={$filtros.categoria}
@@ -323,7 +328,7 @@
         </select>
       </label> -->
 
-     <!--  <label>
+    <!--  <label>
         Metáfora dominante
         <select
           bind:value={$filtros.metafora}
@@ -348,7 +353,7 @@
           {/each}
         </select>
       </label> -->
-<!-- 
+    <!-- 
       <label>
         Canal
         <select
@@ -362,24 +367,25 @@
         </select>
       </label> -->
 
-      <label>
-        Buscar texto
-        <input
-          type="text"
-          placeholder="Ej: tiburones, Sálvame, científicos..."
-          bind:value={$filtros.texto}
-          on:input={(e) => setFiltro({ texto: e.target.value })}
-        />
-      </label>
+    <label>
+      Buscar texto
+      <input
+        type="text"
+        placeholder="Ej: tiburones, Sálvame, científicos..."
+        bind:value={$filtros.texto}
+        on:input={(e) => setFiltro({ texto: e.target.value })}
+      />
+    </label>
 
-      <p class="resumen">
-        {$filtrados.length} ejemplos coinciden con la combinación actual.
-      </p>
-    </aside> 
+    <p class="resumen">
+      {totalEjemplos} ejemplos coinciden con la combinación actual;
+      {totalVisibles} se muestran con el umbral mínimo actual.
+    </p>
+  </aside>
 
   <section class="layout">
     <!-- Columna izquierda: filtros “clásicos” -->
-     
+
     <!-- Columna derecha: nubes + gráficos + tarjetas -->
     <section class="col-derecha">
       <!-- Nubes de conceptos -->
@@ -471,13 +477,22 @@
 
         <div class="slider">
           <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label>Mínimo de casos: {$ui.minCount}</label>
+          <label>
+            Mínimo de casos: {$effectiveMinCount}
+            <span style="opacity:.7; font-size:.75rem;">
+              (máx disponible: {$maxMinCountPosible})
+            </span>
+          </label>
           <input
             type="range"
             min="1"
-            max="20"
+            max={$maxMinCountPosible}
             value={$ui.minCount}
-            on:input={(e) => setUi({ minCount: Number(e.target.value) })}
+            on:input={(e) => {
+              const raw = Number(e.target.value) || 1;
+              const safe = Math.min(raw, $maxMinCountPosible || 1);
+              setUi({ minCount: safe });
+            }}
           />
         </div>
 
@@ -486,10 +501,10 @@
           on:selectConcept={handleSelectConcept}
         />
       </section>
- </section>
-      <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
-        <!-- Gráficos -->
-        <!-- <section class="grid-charts">
+    </section>
+    <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
+      <!-- Gráficos -->
+      <!-- <section class="grid-charts">
           <BarChart
             titulo="Top categorías en el filtro actual"
             data={$conteosFiltrados.categorias}
@@ -507,38 +522,37 @@
           />
         </section> -->
 
-        <!-- Lista de resultados -->
-        <section class="panel panel-lista area-lista">
-          <h2>Ejemplos detallados: {$filtrados.length}</h2>
+      <!-- Lista de resultados -->
+      <section class="panel panel-lista area-lista">
+  <h2>Ejemplos detallados: {totalVisibles}</h2>
 
-          {#if $filtrados.length === 0}
-            <p class="vacio">
-              No se han encontrado ejemplos con esta combinación.
-            </p>
-          {:else}
-            <div class="grid-ejemplos">
-              {#each $filtrados as d}
-                <article class="card" class:ataque={ataquesIds.has(d.id)}>
-                  <h3>{d.ejemplo}</h3>
+  {#if totalVisibles === 0}
+    <p class="vacio">
+      No hay ejemplos que superen el umbral mínimo con los filtros actuales.
+    </p>
+  {:else}
+    <div class="grid-ejemplos">
+      {#each $filtradosVisibles as d}
+        <article class="card" class:ataque={ataquesIds.has(d.id)}>
+          <h3>{d.ejemplo}</h3>
 
-                  <p class="tags">
-                    <span>{d.categoria}</span> ·
-                    <span>{d.tipo_victima}</span> ·
-                    <span>Metáfora: {d.metafora_dominante}</span> ·
-                    <span>Canal: {d.canal}</span>
-                  </p>
+          <p class="tags">
+            <span>{d.categoria}</span> ·
+            <span>{d.tipo_victima}</span> ·
+            <span>Metáfora: {d.metafora_dominante}</span> ·
+            <span>Canal: {d.canal}</span>
+          </p>
 
-                  <p class="desc">{d.descripcion}</p>
+          <p class="desc">{d.descripcion}</p>
 
-                  <p class="mec">
-                    Mecanismo: <strong>{d.mecanismo}</strong>
-                  </p>
-                </article>
-              {/each}
-            </div>
-          {/if}
-        </section>
-     
+          <p class="mec">
+            Mecanismo: <strong>{d.mecanismo}</strong>
+          </p>
+        </article>
+      {/each}
+    </div>
+  {/if}
+</section>
     </section>
   </section>
 </main>
@@ -585,8 +599,8 @@
 
   .layout {
     margin-top: 1.5rem;
-   display: flex;
-   flex-direction: column;
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
   }
 
@@ -640,7 +654,7 @@
     flex-direction: column;
     gap: 1rem;
     display: grid;
-  grid-template-columns: .7fr 1.3fr;
+    grid-template-columns: 0.7fr 1.3fr;
   }
 
   .grid-nubes {
@@ -785,7 +799,7 @@
     }
 
     .layout {
-     /*  grid-template-columns: 1fr; */
+      /*  grid-template-columns: 1fr; */
       gap: 1rem;
       display: flex;
       flex-direction: row;
@@ -806,54 +820,53 @@
     .layout {
       margin-top: 1.5rem;
       display: grid;
-     /*  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr); */
+      /*  grid-template-columns: minmax(260px, 280px) minmax(0, 1fr); */
       gap: 1.5rem;
-        display: flex;
+      display: flex;
       flex-direction: row;
     }
-    }
+  }
 
-    /* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
-    .layout > * {
-      min-width: 0;
-    }
+  /* 👇 MUY IMPORTANTE: permitir que se recorten al ancho disponible */
+  .layout > * {
+    min-width: 0;
+  }
 
-    .col-derecha {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      min-width: 0;
-    }
+  .col-derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
 
-    .panel,
-    .panel-nube,
-    .panel-lista {
-      min-width: 0;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    /* Cualquier cosa con estas clases NO puede ser más ancha que su contenedor */
-    :global(.chart),
-    :global(.force-graph),
-    :global(.concept-cloud-root),
-    :global(.legend-root) {
-      max-width: 100%;
-      box-sizing: border-box;
-      overflow-x: hidden;
-    }
+  .panel,
+  .panel-nube,
+  .panel-lista {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* Cualquier cosa con estas clases NO puede ser más ancha que su contenedor */
+  :global(.chart),
+  :global(.force-graph),
+  :global(.concept-cloud-root),
+  :global(.legend-root) {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
 
-    .grid-charts {
-      grid-template-columns: 1fr;
-    }
+  .grid-charts {
+    grid-template-columns: 1fr;
+  }
 
-    .grid-ejemplos {
-      grid-template-columns: 1fr;
-    }
+  .grid-ejemplos {
+    grid-template-columns: 1fr;
+  }
 
-    .force-graph {
-      height: 260px;
-    }
-  
+  .force-graph {
+    height: 260px;
+  }
 
   @media (max-width: 400px) {
     .app {
@@ -1012,85 +1025,82 @@
     }
   }
   .panel-mapa-top {
-  padding: 0.75rem;
-}
+    padding: 0.75rem;
+  }
 
-.map-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 0.75rem;
-}
-
-.map-cell {
-  min-height: 220px;
-  /* dejamos crecer un poco más y no cortamos el svg */
-  max-height: 100vh;
-  overflow: hidden;
-}
-
-
-.map-title {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.9rem;
-}
-
-/* En móvil lo dejamos en columna para que respire */
-@media (max-width: 900px) {
   .map-grid {
-    grid-template-columns: 1fr;
-  }
-  .map-cell {
-    max-height: none;
-  }
-}
-
-/* Layout de escritorio: grid compacto en la columna derecha */
-@media (min-width: 1024px) {
-  .col-derecha {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
-   /*  grid-template-rows: minmax(0, 260px) minmax(0, 320px); */
-    grid-template-areas:
-      "nube circular"
-      "lista lista";
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: 0.75rem;
-    align-items: start;
   }
 
-  .area-nube {
-    grid-area: nube;
-  }
-
-  .area-circular {
-    grid-area: circular;
-  }
-
-  .area-lista {
-    grid-area: lista;
-  }
-
-  .panel-nube {
-     max-height: fit-content; 
-    overflow-y: auto;
-  }
-
-  .panel-force {
-    /* max-height: 260px; */
+  .map-cell {
+    min-height: 220px;
+    /* dejamos crecer un poco más y no cortamos el svg */
+    max-height: 100vh;
     overflow: hidden;
   }
 
-  .panel-lista.area-lista {
-    max-height: 320px;
-    overflow-y: auto;
+  .map-title {
+    margin: 0 0 0.4rem 0;
+    font-size: 0.9rem;
   }
-}
-@media (min-width: 1024px) {
-  .panel-mapa-metaforico {
-    margin-top: 0.75rem;
-    max-height: 280px;
-    overflow-y: auto;
+
+  /* En móvil lo dejamos en columna para que respire */
+  @media (max-width: 900px) {
+    .map-grid {
+      grid-template-columns: 1fr;
+    }
+    .map-cell {
+      max-height: none;
+    }
   }
-}
 
+  /* Layout de escritorio: grid compacto en la columna derecha */
+  @media (min-width: 1024px) {
+    .col-derecha {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      /*  grid-template-rows: minmax(0, 260px) minmax(0, 320px); */
+      grid-template-areas:
+        "nube circular"
+        "lista lista";
+      gap: 0.75rem;
+      align-items: start;
+    }
 
+    .area-nube {
+      grid-area: nube;
+    }
+
+    .area-circular {
+      grid-area: circular;
+    }
+
+    .area-lista {
+      grid-area: lista;
+    }
+
+    .panel-nube {
+      max-height: fit-content;
+      overflow-y: auto;
+    }
+
+    .panel-force {
+      /* max-height: 260px; */
+      overflow: hidden;
+    }
+
+    .panel-lista.area-lista {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+  }
+  @media (min-width: 1024px) {
+    .panel-mapa-metaforico {
+      margin-top: 0.75rem;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+  }
 </style>
