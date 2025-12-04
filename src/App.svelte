@@ -45,6 +45,8 @@
   import CircularForceGraph from "./lib/CircularForceGraph.svelte";
 
   import MapaRutasContinentes from "./lib/MapaRutas.svelte";
+  import Tabs from "./lib/Tabs.svelte";
+    import Buscador from "./lib/Buscador.svelte";
   // opcional: guardar la ruta seleccionada en App si quieres sincronizar con otros módulos
   let rutaSeleccionada = null;
 
@@ -100,14 +102,6 @@
     if (type === "canales") setUi({ nubeVista: "canales" });
   }
 
-  function toggleTab(tab) {
-    ui.update((u) => ({
-      ...u,
-      // si vuelves a hacer click en la misma pestaña -> la desactivas
-      nubeVista: u.nubeVista === tab ? null : tab,
-      busquedaTag: "", // reseteamos el buscador de tags
-    }));
-  }
 
   // clic en un tag de la nube (usa la pestaña activa del store ui)
   function handleToggleTag(evt) {
@@ -284,275 +278,161 @@
   </section>
 
   <section class="panel">
-    <!--  <MapaProcreate
-      on:selectContinente={handleSelectContinente}
-      continenteActivo={continenteActivoId}
-    /> -->
+    <section class="panel panel-circular area-circular">
+      <header class="circular-header">
+        <h2>Grafo de coocurrencias</h2>
+        <p class="circular-sub">
+          Cada pestaña muestra un grafo centrado en una familia de conceptos.
+        </p>
+      </header>
 
-    <section class="panel panel-mapa-top">
-      <div class="map-grid">
-        <section class="map-cell">
-          <CircularForceGraph
-            nodes={$graphCircular.nodes}
-            links={$graphCircular.links}
-            activeTipo={$ui.nubeVista || "metaforas"}
-          />
-        </section>
-        <section class="map-cell">
-          <h2 class="map-title">Tráfico de ataques entre continentes</h2>
-          <MapaRutasContinentes on:selectRuta={handleSelectRuta} />
-        </section>
-      </div>
+      <section class="panel panel-mapa-top">
+        <div class="map-grid">
+          <section class="map-cell">
+         
+            <CircularForceGraph
+              nodes={$graphCircular.nodes}
+              links={$graphCircular.links}
+              activeTipo={$ui.nubeVista || "metaforas"}
+            />
+          </section>
+          <section class="map-cell">
+            <h2 class="map-title">Tráfico de ataques entre continentes</h2>
+            <MapaRutasContinentes on:selectRuta={handleSelectRuta} />
+          </section>
+        </div>
+      </section>
     </section>
-  </section>
-  <section class="panel panel-mapa-metaforico"></section>
-  <!--  <MapaMetaforico
+    <section class="panel panel-mapa-metaforico"></section>
+    <!--  <MapaMetaforico
     continentes={continentesConfig}
     ejemplos={$filtrados}
     ataquesPerfil={$ataquesPerfil}
     ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
   /> -->
-  <aside class="panel filtros">
-    <h2>Filtros básicos</h2>
+    <aside class="panel filtros">     
+    
+     <Buscador/>
 
-    <!--  <label>
-        Categoría
-        <select
-          bind:value={$filtros.categoria}
-          on:change={(e) => setFiltro({ categoria: e.target.value })}
+      <p class="resumen">
+        {totalEjemplos} ejemplos coinciden con la combinación actual;
+        {totalVisibles} se muestran con el umbral mínimo actual.
+      </p>
+    </aside>
+
+    <section class="layout">
+  
+      <section class="col-derecha">
+        <!-- Nubes de conceptos -->
+        <section class="panel panel-nube area-nube">
+          <Tabs />
+
+         
+
+          <ConceptCloud items={nubeActual} on:toggle={handleToggleTag} />
+        </section>
+
+        <section
+          class="panel panel-force area-circular"
+          style="padding: 0.5rem;"
         >
-          <option value="todas">todas</option>
-          {#each categoriasUnicas as c}
-            <option value={c}>{c}</option>
-          {/each}
-        </select>
-      </label> -->
+          <div class="resumen-filtros">
+            {resumenFiltros || "Sin filtros activos"}
+          </div>
+          <h2 style="font-size:0.9rem; margin:0 0 0.3rem 0;">
+            Mapa de conexiones entre familias de conceptos
+          </h2>
 
-    <!--  <label>
-        Metáfora dominante
-        <select
-          bind:value={$filtros.metafora}
-          on:change={(e) => setFiltro({ metafora: e.target.value })}
-        >
-          <option value="todas">todas</option>
-          {#each metaforasUnicas as m}
-            <option value={m}>{m}</option>
-          {/each}
-        </select>
-      </label> -->
-
-    <!--   <label>
-        Mecanismo
-        <select
-          bind:value={$filtros.mecanismo}
-          on:change={(e) => setFiltro({ mecanismo: e.target.value })}
-        >
-          <option value="todos">todos</option>
-          {#each mecanismosUnicos as m}
-            <option value={m}>{m}</option>
-          {/each}
-        </select>
-      </label> -->
-    <!-- 
-      <label>
-        Canal
-        <select
-          bind:value={$filtros.canal}
-          on:change={(e) => setFiltro({ canal: e.target.value })}
-        >
-          <option value="todos">todos</option>
-          {#each canalesUnicos as c}
-            <option value={c}>{c}</option>
-          {/each}
-        </select>
-      </label> -->
-
-    <label>
-      Buscar texto
-      <input
-        type="text"
-        placeholder="Ej: tiburones, Sálvame, científicos..."
-        bind:value={$filtros.texto}
-        on:input={(e) => setFiltro({ texto: e.target.value })}
-      />
-    </label>
-
-    <p class="resumen">
-      {totalEjemplos} ejemplos coinciden con la combinación actual;
-      {totalVisibles} se muestran con el umbral mínimo actual.
-    </p>
-  </aside>
-
-  <section class="layout">
-    <!-- Columna izquierda: filtros “clásicos” -->
-
-    <!-- Columna derecha: nubes + gráficos + tarjetas -->
-    <section class="col-derecha">
-      <!-- Nubes de conceptos -->
-      <section class="panel panel-nube area-nube">
-        <div class="tabs">
-          <button
-            class:selected={$ui.nubeVista === "metaforas"}
-            style={`--tab-color: ${COLORES_TIPO.metaforas}`}
-            on:click={() => toggleTab("metaforas")}
-          >
-            Metáforas
-          </button>
-          <button
-            class:selected={$ui.nubeVista === "categorias"}
-            style={`--tab-color: ${COLORES_TIPO.categorias}`}
-            on:click={() => toggleTab("categorias")}
-          >
-            Categorías
-          </button>
-          <button
-            class:selected={$ui.nubeVista === "mecanismos"}
-            style={`--tab-color: ${COLORES_TIPO.mecanismos}`}
-            on:click={() => toggleTab("mecanismos")}
-          >
-            Mecanismos
-          </button>
-          <button
-            class:selected={$ui.nubeVista === "canales"}
-            style={`--tab-color: ${COLORES_TIPO.canales}`}
-            on:click={() => toggleTab("canales")}
-          >
-            Canales
-          </button>
-        </div>
-
-        <div class="nube-header">
-          <p class="nube-titulo">
-            {#if $ui.nubeVista === "metaforas"}
-              Metáforas dominantes
-            {:else if $ui.nubeVista === "categorias"}
-              Categorías temáticas
-            {:else if $ui.nubeVista === "mecanismos"}
-              Mecanismos de distorsión
-            {:else}
-              Canales de difusión
-            {/if}
-          </p>
-          <input
-            type="text"
-            placeholder="Filtrar tags de esta nube..."
-            class="input-tag"
-            value={$ui.busquedaTag}
-            on:input={(e) => setUi({ busquedaTag: e.target.value })}
+          <Legend
+            items={[
+              {
+                label: "Categorías",
+                type: "categorias",
+                color: COLORES_TIPO.categorias,
+              },
+              {
+                label: "Metáforas",
+                type: "metaforas",
+                color: COLORES_TIPO.metaforas,
+              },
+              {
+                label: "Mecanismos",
+                type: "mecanismos",
+                color: COLORES_TIPO.mecanismos,
+              },
+              {
+                label: "Canales",
+                type: "canales",
+                color: COLORES_TIPO.canales,
+              },
+            ]}
+            on:focusTipo={handleFocusTipo}
           />
-        </div>
 
-        <ConceptCloud items={nubeActual} on:toggle={handleToggleTag} />
+          <div class="slider">
+            <!-- svelte-ignore a11y_label_has_associated_control -->
+            <label>
+              Mínimo de casos: {$effectiveMinCount}
+              <span style="opacity:.7; font-size:.75rem;">
+                (máx disponible: {$maxMinCountPosible})
+              </span>
+            </label>
+            <input
+              type="range"
+              min="1"
+              max={$maxMinCountPosible}
+              value={$ui.minCount}
+              on:input={(e) => {
+                const raw = Number(e.target.value) || 1;
+                const safe = Math.min(raw, $maxMinCountPosible || 1);
+                setUi({ minCount: safe });
+              }}
+            />
+          </div>
+
+          <ForceConceptGraph
+            graphData={$graphData}
+            on:selectConcept={handleSelectConcept}
+          />
+        </section>
       </section>
+      <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
+        <!-- Gráficos -->
+        
 
-      <section class="panel panel-force area-circular" style="padding: 0.5rem;">
-        <div class="resumen-filtros">
-          {resumenFiltros || "Sin filtros activos"}
-        </div>
-        <h2 style="font-size:0.9rem; margin:0 0 0.3rem 0;">
-          Mapa de conexiones entre familias de conceptos
-        </h2>
+        <!-- Lista de resultados -->
+        <section class="panel panel-lista area-lista">
+          <h2>Ejemplos detallados: {totalVisibles}</h2>
 
-        <Legend
-          items={[
-            {
-              label: "Categorías",
-              type: "categorias",
-              color: COLORES_TIPO.categorias,
-            },
-            {
-              label: "Metáforas",
-              type: "metaforas",
-              color: COLORES_TIPO.metaforas,
-            },
-            {
-              label: "Mecanismos",
-              type: "mecanismos",
-              color: COLORES_TIPO.mecanismos,
-            },
-            { label: "Canales", type: "canales", color: COLORES_TIPO.canales },
-          ]}
-          on:focusTipo={handleFocusTipo}
-        />
+          {#if totalVisibles === 0}
+            <p class="vacio">
+              No hay ejemplos que superen el umbral mínimo con los filtros
+              actuales.
+            </p>
+          {:else}
+            <div class="grid-ejemplos">
+              {#each $filtradosVisibles as d}
+                <article class="card" class:ataque={ataquesIds.has(d.id)}>
+                  <h3>{d.ejemplo}</h3>
 
-        <div class="slider">
-          <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label>
-            Mínimo de casos: {$effectiveMinCount}
-            <span style="opacity:.7; font-size:.75rem;">
-              (máx disponible: {$maxMinCountPosible})
-            </span>
-          </label>
-          <input
-            type="range"
-            min="1"
-            max={$maxMinCountPosible}
-            value={$ui.minCount}
-            on:input={(e) => {
-              const raw = Number(e.target.value) || 1;
-              const safe = Math.min(raw, $maxMinCountPosible || 1);
-              setUi({ minCount: safe });
-            }}
-          />
-        </div>
+                  <p class="tags">
+                    <span>{d.categoria}</span> ·
+                    <span>{d.tipo_victima}</span> ·
+                    <span>Metáfora: {d.metafora_dominante}</span> ·
+                    <span>Canal: {d.canal}</span>
+                  </p>
 
-        <ForceConceptGraph
-          graphData={$graphData}
-          on:selectConcept={handleSelectConcept}
-        />
+                  <p class="desc">{d.descripcion}</p>
+
+                  <p class="mec">
+                    Mecanismo: <strong>{d.mecanismo}</strong>
+                  </p>
+                </article>
+              {/each}
+            </div>
+          {/if}
+        </section>
       </section>
-    </section>
-    <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
-      <!-- Gráficos -->
-      <!-- <section class="grid-charts">
-          <BarChart
-            titulo="Top categorías en el filtro actual"
-            data={$conteosFiltrados.categorias}
-            maxItems={8}
-          />
-          <BarChart
-            titulo="Top metáforas en el filtro actual"
-            data={$conteosFiltrados.metaforas}
-            maxItems={8}
-          />
-          <BarChart
-            titulo="Top canales en el filtro actual"
-            data={$conteosFiltrados.canales}
-            maxItems={6}
-          />
-        </section> -->
-
-      <!-- Lista de resultados -->
-      <section class="panel panel-lista area-lista">
-  <h2>Ejemplos detallados: {totalVisibles}</h2>
-
-  {#if totalVisibles === 0}
-    <p class="vacio">
-      No hay ejemplos que superen el umbral mínimo con los filtros actuales.
-    </p>
-  {:else}
-    <div class="grid-ejemplos">
-      {#each $filtradosVisibles as d}
-        <article class="card" class:ataque={ataquesIds.has(d.id)}>
-          <h3>{d.ejemplo}</h3>
-
-          <p class="tags">
-            <span>{d.categoria}</span> ·
-            <span>{d.tipo_victima}</span> ·
-            <span>Metáfora: {d.metafora_dominante}</span> ·
-            <span>Canal: {d.canal}</span>
-          </p>
-
-          <p class="desc">{d.descripcion}</p>
-
-          <p class="mec">
-            Mecanismo: <strong>{d.mecanismo}</strong>
-          </p>
-        </article>
-      {/each}
-    </div>
-  {/if}
-</section>
     </section>
   </section>
 </main>
@@ -663,17 +543,6 @@
     gap: 0.75rem;
   }
 
-  .grid-charts {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1.5fr);
-    gap: 0.75rem;
-  }
-
-  @media (max-width: 900px) {
-    .grid-charts {
-      grid-template-columns: 1fr;
-    }
-  }
 
   .panel-lista {
     padding: 0.9rem;
@@ -735,26 +604,7 @@
     gap: 0.5rem;
   }
 
-  .tabs {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .tabs button {
-    border-radius: 999px;
-    border: 1px solid #374151;
-    background: #020617;
-    color: #e5e7eb;
-    font-size: 0.8rem;
-    padding: 0.25rem 0.7rem;
-    cursor: pointer;
-  }
-
-  .tabs button.selected {
-    border-color: #22d3ee;
-    background: radial-gradient(circle at top left, #22d3ee33, #020617);
-  }
+ 
 
   .nube-header {
     display: flex;
@@ -770,16 +620,7 @@
     color: #e5e7eb;
   }
 
-  .input-tag {
-    flex: 1 1 180px;
-    max-width: 260px;
-    padding: 0.3rem 0.5rem;
-    border-radius: 999px;
-    border: 1px solid #374151;
-    background: #030712;
-    color: #f9fafb;
-    font-size: 0.8rem;
-  }
+
 
   .resumen-filtros {
     font-size: 0.8rem;
@@ -1102,5 +943,27 @@
       max-height: 280px;
       overflow-y: auto;
     }
+  }
+
+  .panel-circular {
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .circular-header h2 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .circular-sub {
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .circular-container {
+    width: 100%;
   }
 </style>

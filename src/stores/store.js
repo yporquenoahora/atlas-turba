@@ -31,7 +31,7 @@ export const filtros = writable({
 
 // UI de exploración
 export const ui = writable({
-    nubeVista: "metaforas",
+    nubeVista: "mecanismos",
     busquedaTag: "",
     minCount: 10
 });
@@ -739,8 +739,8 @@ export const rutasEntreContinentes = derived(
 // Cada link = dos filtros que aparecen en el mismo ejemplo (coocurrencia)
 
 export const graphCircular = derived(
-    filtrados,
-    ($filtrados) => {
+    filtradosVisibles,
+    ($filtradosvisibles) => {
         const nodesMap = new Map();
         const linksMap = new Map();
 
@@ -767,7 +767,7 @@ export const graphCircular = derived(
         }
 
         // Recorremos ejemplos filtrados y conectamos sus filtros internos
-        for (const d of $filtrados || []) {
+        for (const d of $filtradosvisibles || []) {
             const idCat = addNode("categoria", d.categoria);
             const idMet = addNode("metafora", d.metafora_dominante);
             const idMec = addNode("mecanismo", d.mecanismo);
