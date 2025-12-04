@@ -314,7 +314,7 @@ export const graphData = derived(
 );
 
 
-export const perfilActivo = writable(null); // id de perfil o null
+export const perfilActivo = writable("estrella_pop_caida"); // id de perfil o null
 
 // helper para comparar ejemplo con el perfil
 function coincideConPerfil(ejemplo, perfil) {
