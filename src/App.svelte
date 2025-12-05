@@ -18,6 +18,7 @@
     metaforasUnicas,
     mecanismosUnicos,
     canalesUnicos,
+    
     estadoPerfil,
     ataqueActual,
     ataqueIndex,

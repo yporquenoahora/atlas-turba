@@ -145,7 +145,6 @@
     });
   }
 
-  $: console.log("nodes: ", nodes)
 </script>
 
 <section class="sankey-panel">
@@ -209,7 +208,7 @@
             y="14"
             text-anchor = {n.familia.includes("cate") ? "start" : "end"}
           >
-            {n.key}{n.familia}
+            {n.key}
           </text>
          <!--  <g>     
              <rect

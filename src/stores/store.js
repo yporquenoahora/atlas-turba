@@ -811,7 +811,7 @@ export function buildGraphSankey(rows, threshold) {
   const linkMap = new Map();   // "a|b" -> {source,target,value}
 
   function nodeId(type, key) {
-    return `${key}`;
+    return `${type}:${key}`;
   }
 
   for (const row of rows) {
