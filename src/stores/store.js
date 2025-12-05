@@ -797,3 +797,79 @@ export const graphCircular = derived(
         return { nodes, links };
     }
 );
+
+
+export function buildGraphSankey(rows, threshold) {
+  const dims = [
+    { key: "categoria", type: "cat", label: "Categoría" },
+    { key: "metafora_dominante", type: "meta", label: "Metáfora" },
+    { key: "mecanismo", type: "mec", label: "Mecanismo" },
+    { key: "canal", type: "canal", label: "Canal" }
+  ];
+
+  const nodeMap = new Map();   // id -> node
+  const linkMap = new Map();   // "a|b" -> {source,target,value}
+
+  function nodeId(type, key) {
+    return `${key}`;
+  }
+
+  for (const row of rows) {
+    const values = dims
+      .map(d => ({ dim: d, value: row[d.key] }))
+      .filter(v => v.value);
+
+    for (let i = 0; i < values.length - 1; i++) {
+      const a = values[i];
+      const b = values[i + 1];
+
+      const idA = nodeId(a.dim.type, a.value);
+      const idB = nodeId(b.dim.type, b.value);
+
+      if (!nodeMap.has(idA)) {
+        nodeMap.set(idA, {
+          id: idA,
+          name: a.value,
+          tipo: a.dim.type,
+          dimLabel: a.dim.label
+        });
+      }
+      if (!nodeMap.has(idB)) {
+        nodeMap.set(idB, {
+          id: idB,
+          name: b.value,
+          tipo: b.dim.type,
+          dimLabel: b.dim.label
+        });
+      }
+
+      const key = `${idA}|${idB}`;
+      const prev = linkMap.get(key) || { source: idA, target: idB, value: 0 };
+      prev.value += 1;
+      linkMap.set(key, prev);
+    }
+  }
+
+  let nodes = Array.from(nodeMap.values());
+  let links = Array.from(linkMap.values());
+
+  // filtramos links débiles
+  links = links.filter(l => l.value >= threshold);
+
+  // nos quedamos sólo con los nodos que participan en esos links
+  const nodeIdsEnUso = new Set();
+  for (const l of links) {
+    nodeIdsEnUso.add(l.source);
+    nodeIdsEnUso.add(l.target);
+  }
+  nodes = nodes.filter(n => nodeIdsEnUso.has(n.id));
+
+  // 🚫 nada de mapear a índices, d3-sankey lo hará usando nodeId
+  return { nodes, links };
+}
+
+
+export const graphDataSankey = derived(
+    [filtrados, effectiveMinCount],
+    ([$filtrados, $effectiveMin]) => buildGraphSankey($filtrados, $effectiveMin || 1)
+);

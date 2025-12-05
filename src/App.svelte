@@ -46,9 +46,12 @@
 
   import MapaRutasContinentes from "./lib/MapaRutas.svelte";
   import Tabs from "./lib/Tabs.svelte";
-    import Buscador from "./lib/Buscador.svelte";
+  import Buscador from "./lib/Buscador.svelte";
+
+  import SankeyMenu from "./lib/SankeyMenu.svelte";
   // opcional: guardar la ruta seleccionada en App si quieres sincronizar con otros módulos
   let rutaSeleccionada = null;
+  export let maxPorColumna = 8;
 
   function handleSelectRuta(event) {
     rutaSeleccionada = event.detail.ruta;
@@ -101,7 +104,6 @@
     if (type === "mecanismos") setUi({ nubeVista: "mecanismos" });
     if (type === "canales") setUi({ nubeVista: "canales" });
   }
-
 
   // clic en un tag de la nube (usa la pestaña activa del store ui)
   function handleToggleTag(evt) {
@@ -201,6 +203,38 @@
       ? $ataquesPerfil.ataques.map((a) => a.id).filter(Boolean)
       : [],
   );
+  function handleSelectNodo(e) {
+    const { tipo, key } = e.detail; // tipo: "categorias"/"metaforas"/...
+    filtros.update((f) => {
+      if (tipo === "categorias")
+        return { ...f, categoria: f.categoria === key ? "todas" : key };
+      if (tipo === "metaforas")
+        return { ...f, metafora: f.metafora === key ? "todas" : key };
+      if (tipo === "mecanismos")
+        return { ...f, mecanismo: f.mecanismo === key ? "todos" : key };
+      if (tipo === "canales")
+        return { ...f, canal: f.canal === key ? "todos" : key };
+      return f;
+    });
+  }
+
+  function handleSelectPar(e) {
+    const { fromTipo, fromKey, toTipo, toKey } = e.detail;
+    filtros.update((f) => {
+      let next = { ...f };
+      if (fromTipo === "categorias") next.categoria = fromKey;
+      if (fromTipo === "metaforas") next.metafora = fromKey;
+      if (fromTipo === "mecanismos") next.mecanismo = fromKey;
+      if (fromTipo === "canales") next.canal = fromKey;
+
+      if (toTipo === "categorias") next.categoria = toKey;
+      if (toTipo === "metaforas") next.metafora = toKey;
+      if (toTipo === "mecanismos") next.mecanismo = toKey;
+      if (toTipo === "canales") next.canal = toKey;
+
+      return next;
+    });
+  }
 </script>
 
 <main class="app">
@@ -277,19 +311,20 @@
     {/if}
   </section>
 
+  <section class="panel area-sankey">
+    <SankeyMenu
+      datos={$filtradosVisibles}
+      maxNodosVisibles={40}
+      on:selectNodo={handleSelectNodo}
+      on:selectPar={handleSelectPar}
+    />
+  </section>
+
   <section class="panel">
     <section class="panel panel-circular area-circular">
-      <header class="circular-header">
-        <h2>Grafo de coocurrencias</h2>
-        <p class="circular-sub">
-          Cada pestaña muestra un grafo centrado en una familia de conceptos.
-        </p>
-      </header>
-
       <section class="panel panel-mapa-top">
         <div class="map-grid">
           <section class="map-cell">
-         
             <CircularForceGraph
               nodes={$graphCircular.nodes}
               links={$graphCircular.links}
@@ -310,9 +345,8 @@
     ataquesPerfil={$ataquesPerfil}
     ataqueActualId={$ataqueActual ? $ataqueActual.ataque.id : null}
   /> -->
-    <aside class="panel filtros">     
-    
-     <Buscador/>
+    <aside class="panel filtros">
+      <Buscador />
 
       <p class="resumen">
         {totalEjemplos} ejemplos coinciden con la combinación actual;
@@ -321,13 +355,10 @@
     </aside>
 
     <section class="layout">
-  
       <section class="col-derecha">
         <!-- Nubes de conceptos -->
         <section class="panel panel-nube area-nube">
           <Tabs />
-
-         
 
           <ConceptCloud items={nubeActual} on:toggle={handleToggleTag} />
         </section>
@@ -398,7 +429,6 @@
       </section>
       <section class="panel panel-lista area-lista" style="padding: 0.5rem;">
         <!-- Gráficos -->
-        
 
         <!-- Lista de resultados -->
         <section class="panel panel-lista area-lista">
@@ -543,7 +573,6 @@
     gap: 0.75rem;
   }
 
-
   .panel-lista {
     padding: 0.9rem;
   }
@@ -604,8 +633,6 @@
     gap: 0.5rem;
   }
 
- 
-
   .nube-header {
     display: flex;
     align-items: center;
@@ -619,8 +646,6 @@
     font-size: 0.85rem;
     color: #e5e7eb;
   }
-
-
 
   .resumen-filtros {
     font-size: 0.8rem;
