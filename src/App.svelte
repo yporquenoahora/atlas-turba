@@ -31,6 +31,7 @@
   import ForceConceptGraph from "./lib/ForceConceptGraph.svelte";
   import Legend from "./lib/Legend.svelte";
   import MapaMetaforico from "./lib/MapaMetaforico.svelte";
+  import TurbaSim from "./lib/TurbaSim.svelte" 
 
   import { continentesConfig, perfilesPersonaje } from "./stores/store.js";
   import {
@@ -50,6 +51,9 @@
   import Buscador from "./lib/Buscador.svelte";
 
   import SankeyMenu from "./lib/SankeyMenu.svelte";
+  import SelectTurva from "./lib/SelectTurva.svelte";
+  import TurbaSimFromData from "./lib/TurbaSimFromData.svelte";
+
   // opcional: guardar la ruta seleccionada en App si quieres sincronizar con otros módulos
   let rutaSeleccionada = null;
   export let maxPorColumna = 8;
@@ -236,7 +240,11 @@
       return next;
     });
   }
+  let caseId;
 </script>
+<SelectTurva bind:caseId />
+<TurbaSimFromData {caseId} />
+
 
 <main class="app">
   <header class="header">

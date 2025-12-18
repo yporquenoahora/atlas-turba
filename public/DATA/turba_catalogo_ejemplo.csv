@@ -1,0 +1,82 @@
+case_id,ejemplo,categoria,tipo_victima,metafora_dominante,mecanismo_de_distorsion,canal_difusion,breve_descripcion
+britney_spears,Britney Spears,celebridad,individuo famoso,fauces,espectacularización,medios,Convertida en símbolo de deterioro público.
+michael_jackson,Michael Jackson,celebridad,individuo famoso,espejo roto,demonización,medios,Investigado y expuesto como espectáculo.
+amy_winehouse,Amy Winehouse,celebridad,individuo famoso,circo,espectacularización,medios,Su deterioro se volvió entretenimiento.
+lindsay_lohan,Lindsay Lohan,celebridad,individuo famoso,avatar,estereotipación,prensa,Convertida en arquetipo de caos.
+paris_hilton,Paris Hilton,celebridad,individuo famoso,jaula simbólica,carcasa,medios,Simplificada a personaje superficial.
+shakira_caso_hacienda,Shakira caso Hacienda,celebridad,individuo famoso,jaula fiscal,culpabilización,redes,Culpabilización masiva.
+gerard_piqué,Gerard Piqué,celebridad,individuo famoso,manada,linchamiento,redes,Villano sentimental en narrativas virales.
+c_tangana,C Tangana,celebridad,individuo famoso,espejo roto,polarización,redes,Cada gesto interpretado al límite.
+aitana,Aitana,celebridad,individuo famoso,avatar,idealización,redes,Convertida en representación generacional.
+rosalía,Rosalía,celebridad,individuo famoso,fantasma cultural,polarización,redes,Proyectada como problema o icono.
+bad_bunny,Bad Bunny,celebridad,individuo famoso,carcasa,controversia,memes,Antagonista o ídolo según fandom.
+taylor_swift,Taylor Swift,celebridad,individuo famoso,ídolo roto,polarización,redes,Cualquier acto se sobredimensiona.
+selena_gomez,Selena Gomez,celebridad,individuo famoso,sombra,acoso,redes,Perseguida por dinámicas tóxicas de fandom.
+dua_lipa,Dua Lipa,celebridad,individuo famoso,carcasa,idealización,memes,Convertida en meme global.
+beyoncé,Beyoncé,celebridad,individuo famoso,altar,demonización,conspiraciones,Convertida en símbolo ocultista en teorías.
+lady_gaga,Lady Gaga,celebridad,individuo famoso,ritual,conspiración,redes,Victimizada por teorías absurdas.
+tiburones,Tiburones,naturaleza,animales,fauces,demonización,medios,Pintados como monstruos letales.
+lobos,Lobos,naturaleza,animales,fauces,temor ancestral,folclore,Demonizados pese a datos reales.
+serpientes,Serpientes,naturaleza,animales,fantasma,temor arcaico,rumores,Presentadas como malévolas por defecto.
+murciélagos,Murciélagos,pandemia,animales,virus mental,culpabilización,medios,Convertidos en fuente del contagio.
+perros_ppp,Perros PPP,naturaleza,animales,bestiario,demonización,medios,Demonización periódica de razas.
+delfines,Delfines,naturaleza,animales,espejo,idealización,documentales,Humanizados como santos marinos.
+osos_polares,Osos polares,naturaleza,animales,fantasma,alarmismo,medios,Convertidos en símbolo de apocalipsis mediático.
+científicos_pandemia,Científicos pandemia,ciencia,colectivo técnico,espejo roto,chivo expiatorio,redes,Responsabilizados del caos.
+epidemiólogos,Epidemiólogos,ciencia,colectivo técnico,torre de marfil,demonización,medios,Convertidos en villanos por contradicciones normales.
+sanitarios_2020,Sanitarios 2020,ciencia,colectivo técnico,héroe roto,borrado,medios,Del aplauso al ataque posterior.
+virólogos,Virólogos,ciencia,colectivo técnico,oráculo fallido,culpabilización,prensa,Recibieron presión imposible.
+oms,OMS,organización,entidad abstracta,laberinto,desconfianza,rumores,Presentada como ente negativo.
+farmacéuticas,Farmacéuticas,industria,entidad abstracta,ogro,diabolización,medios,Simplificadas como máquinas del mal.
+vacunas_arn,Vacunas ARN,pandemia,idea abstracta,fantasma,desconfianza,redes,Convertidas en experimento peligroso.
+microchips_5g,Microchips 5G,pseudociencia,idea abstracta,tentáculos,hiperstición,redes,Narrativa conspirativa masiva.
+antivacunas,Antivacunas,pseudociencia,grupo ideológico,espejo roto,fanatización,redes,Viralizan miedo como identidad.
+quimiofobia,Quimiofobia,pseudociencia,idea abstracta,veneno,conceptualización,memes,Lo químico es malo como dogma.
+aceites_esenciales,Aceites esenciales,pseudociencia,idea abstracta,curación mágica,simplificación,redes,Solución universal imaginaria.
+refugiados,Refugiados,migración,grupo marginado,enjambre,animalización,medios,Representados como plaga.
+migrantes_africanos,Migrantes africanos,migración,grupo marginado,riada,deshumanización,prensa,Presentados como flujo imparable.
+personas_sin_hogar,Personas sin hogar,exclusión social,grupo vulnerable,sombra,borrado,ciudad,Convertidos en paisaje urbano.
+comunidad_gitana,Comunidad gitana,marginalidad,grupo marginado,ruido,estereotipación,rumores,Atribución de delitos sin base.
+personas_trans,Personas trans,género,grupo marginado,espejo roto,estigmatización,política,Convertidas en amenaza cultural.
+personas_lgtb,Personas LGTB,género,grupo marginado,avatar,caricaturización,humor,Convertidas en entretenimiento 90s.
+mujeres_en_redes,Mujeres en redes,género,grupo marginado,avispero,linchamiento,redes,Constantemente atacadas.
+madres_solteras,Madres solteras,género,grupo vulnerable,pozo,culpabilización,medios,Responsabilizadas de problemas sociales.
+vídeos_de_primera,Vídeos de Primera,tv,individuo,caída,espectacularización,tv,Transformación del dolor en humor.
+vídeos_de_zapping,Vídeos de Zapping,tv,individuo caricaturizado,circo,ridiculización,tv,Hacer humor de fallos reales.
+tómbola,Tómbola,tv,individuo,circo,humillación,tv,Show basado en devorar reputaciones.
+crónicas_marcianas,Crónicas Marcianas,tv,individuo,fauces,violencia simbólica,tv,Personajes usados como carne mediática.
+pozí,Pozí,tv,individuo vulnerable,bestiario,cosificación,tv,Reducido a caricatura inhumana.
+carmen_de_mairena,Carmen de Mairena,tv,individuo vulnerable,circo,espectacularización,tv,"Convertida en ""chiste""."
+coto_matamoros,Coto Matamoros,tv,individuo famoso,lobo colectivo,demonización,tv,Construcción de villano oficial.
+carmen_hornillos,Carmen Hornillos,tv,individuo vulnerable,espejo roto,burla,tv,Explotada sin piedad televisiva.
+la_noria,La Noria,tv,individuo,circo,morbosidad,tv,Espectáculo de sufrimiento.
+sálvame,Sálvame,tv,individuo,fauces,linchamiento,tv,Devora identidades en directo.
+belén_esteban,Belén Esteban,tv,individuo famoso,avatar,caricaturización,televisivo,Transformada en figura abstracta.
+jorge_javier_vázquez,Jorge Javier Vázquez,tv,individuo famoso,carcasa,polarización,tv,Único o villano según narrativa.
+maría_teresa_campos,María Teresa Campos,tv,individuo famoso,ídolo roto,espectáculo,tv,Expuesta en fragilidad mediática.
+chiquito_de_la_calzada,Chiquito de la Calzada,tv,individuo,carcasa,iconización,tv,Convertido en mito cómico.
+carlos_latre,Carlos Latre,tv,individuo,avatar,mimetismo,tv,Sus imitaciones crean monstruos simbólicos.
+triunfitos_ot,Triunfitos OT,tv,colectivo,espejo roto,idealización,tv,Figuras moldeadas según audiencia.
+triunfitos_expulsados,Triunfitos expulsados,tv,individuo,caída,purga,tv,Caída ritualizada.
+marujas_de_reality,Marujas de reality,tv,grupo vulnerable,circo,cosificación,tv,Usadas como entretenimiento.
+youtubers_polémicos,Youtubers polémicos,internet,individuo famoso,lobo colectivo,linchamiento,redes,Público castigador.
+streamers_grandes,Streamers grandes,internet,individuo famoso,espejo roto,hiperexposición,redes,Todo se magnifica.
+streamers_pequeños,Streamers pequeños,internet,individuo,sombra,borrado,algoritmo,Invisibles salvo polémicas.
+tiktokers_virales,Tiktokers virales,internet,adolescentes,enjambre,exposición extrema,redes,Convertidos en meme masivo.
+influencers_fitness,Influencers fitness,internet,individuo,avatar,cosificación,instagram,Cuerpos como mercancía.
+influencers_belleza,Influencers belleza,internet,individuo,espejo roto,exigencia extrema,redes,Idealización imposible.
+cosplayers,Cosplayers,internet,individuo,carcasa,exotización,eventos,Vistos como rareza pública.
+gamers,Gamers,cultura digital,grupo marginado,avatar,demonización,medios,Blanco habitual de pánico moral.
+otakus,Otakus,cultura digital,grupo marginado,carcasa,estereotipación,memes,Representados como antisociales.
+fans_de_kpop,Fans de Kpop,cultura digital,colectivo,enjambre,caricaturización,medios,Vistos como secta global.
+fans_de_fútbol,Fans de fútbol,deporte,colectivo,manada,polarización,medios,Vistos como hordas irracionales.
+ultras,Ultras,deporte,colectivo,lobo,demonización,medios,Convertidos en bestias peligrosas.
+el_var,El VAR,deporte,entidad abstracta,máquina,culpabilización,medios,Enemigo público de los bares.
+economistas,Economistas,profesión,colectivo,torre,desconfianza,medios,Considerados élite fría.
+abogados,Abogados,profesión,colectivo,jaula,estereotipación,humor,presentados como estafadores.
+psicólogos,Psicólogos,profesión,colectivo,espejo roto,ridiculización,series,Representados como charlatanes.
+programadores,Programadores,tecnología,colectivo,laberinto,culpabilización,medios,Culpados de fallos digitales.
+hackers,Hackers,tecnología,colectivo,bestiario,demonización,medios,Imagen oscura y peligrosa.
+ia_moderna,IA moderna,tecnología,entidad abstracta,fantasma,apocalipsis anunciado,redes,Vista como amenaza.
+chatgpt,ChatGPT,tecnología,entidad abstracta,oráculo fallido,hipérbole,memes,Representado como dios o monstruo.
+algoritmos,Algoritmos,tecnología,entidad abstracta,máquina opresora,culpabilización,redes,Culpados de todo.
