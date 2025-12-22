@@ -343,10 +343,10 @@
               activeTipo={$ui.nubeVista || "metaforas"}
             />
           </section>
-          <section class="map-cell">
+          <!-- <section class="map-cell">
             <h2 class="map-title">Tráfico de ataques entre continentes</h2>
             <MapaRutasContinentes on:selectRuta={handleSelectRuta} />
-          </section>
+          </section> -->
         </div>
       </section>
     </section>
