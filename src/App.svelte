@@ -242,6 +242,8 @@
     });
   }
   let caseId;
+
+  
 </script>
 <SelectTurva bind:caseId />
 <TurbaSimFromData {caseId} />

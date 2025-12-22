@@ -1,8 +1,9 @@
 <script>
-    import { onDestroy } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { simCursor, simCaseId, simPlaying } from '../stores/simCursor.js';
 
     let caseId = 'abogados';
+    let cases = [];
     let cursor = 0;
     let playing = false;
 
@@ -211,33 +212,64 @@
             }, 350);
         }
     }
+
+    async function loadIndex() {
+    // soporta index como array ["abogados"] o como objeto { cases: [...] }
+    const idxUrl = `${BASE}/${OUT_DIR}/index.json`;
+    const res = await fetch(idxUrl);
+    if (!res.ok) throw new Error(`No encuentro index: ${idxUrl} (${res.status})`);
+    const txt = await res.text();
+    const idx = JSON.parse(txt.replace(/^\uFEFF/, "").trim());
+
+    cases = Array.isArray(idx) ? idx : (idx.cases || []);
+    if (!cases.length) return;
+
+    // si el caseId actual no existe, usa el primero
+    if (!cases.includes(caseId)) caseId = cases[0];
+  }
+
+ 
+
+  function onChangeCase(e) {
+    caseId = e.target.value;
+    loadCase(caseId);
+  }
+
+  function onChangeCategory(e) {
+    activeTag = e.target.value;
+    // si quieres “saltar” al primer evento de esa categoría:
+    // const first = timeline.find(ev => (ev.tags||[]).includes(activeTag));
+    // if (first) simCursor.set(first.t);
+  }
+
+  onMount(async () => {
+    await loadIndex();
+    if (caseId) await loadCase(caseId);
+  });
 </script>
 
 <div class="panel">
     <div class="row">
         <div class="left">
-            <label>Caso</label>
-            <input
-                value={caseId}
-                on:change={(e) => {
-                    console.log(e);
-                    simCaseId.set(e.target.value);
-                }}
-            />
-            <small>
-                Debe existir /DATA/out2/{caseId}.csv y /DATA/cases/{caseId}/timeline.json</small
-            >
+          <label>Caso</label>
+          <select bind:value={caseId} on:change={onChangeCase} disabled={!cases.length}>
+            {#each cases as c}
+              <option value={c}>{c}</option>
+            {/each}
+          </select>
+          <small>Lee casos desde {BASE}/{OUT_DIR}/index.json</small>
         </div>
-
+      
         <div class="right">
-            <label>Categoría</label>
-            <select bind:value={activeTag}>
-                {#each categories as c}
-                    <option value={c}>{c}</option>
-                {/each}
-            </select>
+          <label>Categoría</label>
+          <select bind:value={activeTag} on:change={onChangeCategory} disabled={!categories.length}>
+            {#each categories as c}
+              <option value={c}>{c}</option>
+            {/each}
+          </select>
         </div>
-    </div>
+      </div>
+      
 
     <div class="row">
         <button on:click={togglePlay}>{playing ? '⏸ Pausa' : '▶ Play'}</button
