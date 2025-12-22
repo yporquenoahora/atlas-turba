@@ -46,7 +46,6 @@
 
         const cleaned = tlText.replace(/^\uFEFF/, '').trim();
 
-        // Si esto peta, casi seguro estás recibiendo HTML (404 / index.html) o texto
         if (!(cleaned.startsWith('{') || cleaned.startsWith('['))) {
             throw new Error(
                 `Timeline NO es JSON en ${tlUrl}. Empieza por: ${cleaned.slice(0, 120)}`,
@@ -64,7 +63,7 @@
 
         timeline = tl.events || [];
 
-        // ---- CSV (bien como lo tienes) ----
+        // ---- CSV ----
         const csvRes = await fetch(csvUrl);
         if (!csvRes.ok) {
             const t = await csvRes.text().catch(() => '');
@@ -74,16 +73,20 @@
         }
 
         const csvText = await csvRes.text();
-        console.log(csvText);
         chapters = parseCsv(csvText);
 
         // tags -> categorías
         const tags = new Set();
         for (const e of timeline) (e.tags || []).forEach((t) => tags.add(t));
+        console.log(timeline, tags)
         categories = ['ALL', ...Array.from(tags).sort()];
+        activeTag = 'ALL';
 
-        // reseteo cursor al rango válido
+        // reseteo cursor
         simCursor.set(0);
+
+        // opcional, si tienes store de caseId:
+        // simCaseId.set(id);
     }
 
     // Carga inicial y cuando cambia caseId
@@ -91,32 +94,49 @@
 
     function parseCsv(text) {
         // CSV simple con comillas (suficiente para tus exports)
-        const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(Boolean);
+        const lines = text
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .split('\n')
+            .filter(Boolean);
         if (lines.length < 2) return [];
-        const header = splitCsvLine(lines[0]).map(h => h.trim());
+        const header = splitCsvLine(lines[0]).map((h) => h.trim());
         const rows = [];
 
-        console.log('chapters:', lines.length, 'sample:', lines[0]);
+       // console.log('chapters:', lines.length, 'sample:', lines[0]);
         console.log(
             't values sample:',
-            lines.slice(0, 5).map((c) => {console.log(c);return c.t}),
+            lines.slice(0, 5).map((c) => {
+                
+                return c.t;
+            }),
         );
 
         for (let li = 1; li < lines.length; li++) {
-    const cols = splitCsvLine(lines[li]);
-    if (!cols.length) continue;
+            const cols = splitCsvLine(lines[li]);
+            if (!cols.length) continue;
 
-    const obj = {};
-    header.forEach((h, i) => obj[h] = (cols[i] ?? "").trim());
+            const obj = {};
+            header.forEach((h, i) => (obj[h] = (cols[i] ?? '').trim()));
 
-    obj.chapter = Number(obj.chapter);
-    obj.t = Number(obj.t);
+            obj.chapter = Number(obj.chapter);
+            obj.t = Number(obj.t);
 
-    try { obj.facts_json = JSON.parse(obj.facts_json || "[]"); } catch { obj.facts_json = []; }
-    try { obj.next_options_json = JSON.parse(obj.next_options_json || "[]"); } catch { obj.next_options_json = []; }
+            try {
+                obj.facts_json = JSON.parse(obj.facts_json || '[]');
+            } catch {
+                obj.facts_json = [];
+            }
+            try {
+                obj.next_options_json = JSON.parse(
+                    obj.next_options_json || '[]',
+                );
+            } catch {
+                obj.next_options_json = [];
+            }
 
-    rows.push(obj);
-  }
+            rows.push(obj);
+        }
 
         return rows;
     }
@@ -165,7 +185,7 @@
     }
 
     // Capítulo “más cercano” al cursor actual (por t)
-    $: console.log("currentChapter ", currentChapter)
+    $: console.log('currentChapter ', currentChapter);
     $: currentChapter = (() => {
         if (!chapters?.length) return null;
 
@@ -214,62 +234,73 @@
     }
 
     async function loadIndex() {
-    // soporta index como array ["abogados"] o como objeto { cases: [...] }
-    const idxUrl = `${BASE}/${OUT_DIR}/index.json`;
-    const res = await fetch(idxUrl);
-    if (!res.ok) throw new Error(`No encuentro index: ${idxUrl} (${res.status})`);
-    const txt = await res.text();
-    const idx = JSON.parse(txt.replace(/^\uFEFF/, "").trim());
+        const idxUrl = `${BASE}/${OUT_DIR}/index.json`;
 
-    cases = Array.isArray(idx) ? idx : (idx.cases || []);
-    if (!cases.length) return;
+        const res = await fetch(idxUrl);
+        const txt = await res.text();
 
-    // si el caseId actual no existe, usa el primero
-    if (!cases.includes(caseId)) caseId = cases[0];
-  }
+        if (!res.ok) {
+            throw new Error(
+                `No encuentro index: ${idxUrl} (${res.status}) :: ${txt.slice(0, 120)}`,
+            );
+        }
 
- 
+        const cleaned = txt.replace(/^\uFEFF/, '').trim();
+        const idx = JSON.parse(cleaned);
 
-  function onChangeCase(e) {
-    caseId = e.target.value;
-    loadCase(caseId);
-  }
+        // soporta index como array ["abogados"] o como objeto { cases: [...] }
+        cases = Array.isArray(idx) ? idx : idx.cases || [];
+        cases = cases.filter(Boolean);
 
-  function onChangeCategory(e) {
-    activeTag = e.target.value;
-    // si quieres “saltar” al primer evento de esa categoría:
-    // const first = timeline.find(ev => (ev.tags||[]).includes(activeTag));
-    // if (first) simCursor.set(first.t);
-  }
+        if (!cases.length) return;
 
-  onMount(async () => {
-    await loadIndex();
-    if (caseId) await loadCase(caseId);
-  });
+        // si el actual no existe, ponemos el primero
+        if (!cases.includes(caseId)) caseId = cases[0];
+    }
+
+    function onChangeCase(e) {
+        caseId = e.target.value;
+        loadCase(caseId);
+    }
+
+    function onChangeCategory(e) {
+        activeTag = e.target.value;
+        // si quieres “saltar” al primer evento de esa categoría:
+        // const first = timeline.find(ev => (ev.tags||[]).includes(activeTag));
+        // if (first) simCursor.set(first.t);
+    }
+
+    onMount(async () => {
+        await loadIndex();
+        if (caseId) await loadCase(caseId);
+    });
 </script>
 
 <div class="panel">
     <div class="row">
         <div class="left">
-          <label>Caso</label>
-          <select bind:value={caseId} on:change={onChangeCase} disabled={!cases.length}>
-            {#each cases as c}
-              <option value={c}>{c}</option>
-            {/each}
-          </select>
-          <small>Lee casos desde {BASE}/{OUT_DIR}/index.json</small>
+            <label>Caso</label>
+            <select
+                bind:value={caseId}
+                on:change={onChangeCase}
+                disabled={!cases.length}
+            >
+                {#each cases as c}
+                    <option value={c}>{c}</option>
+                {/each}
+            </select>
+            <small>Lee casos desde {BASE}/{OUT_DIR}/index.json</small>
         </div>
-      
-        <div class="right">
-          <label>Categoría</label>
-          <select bind:value={activeTag} on:change={onChangeCategory} disabled={!categories.length}>
-            {#each categories as c}
-              <option value={c}>{c}</option>
-            {/each}
-          </select>
-        </div>
-      </div>
-      
+
+        <!-- <div class="right">
+            <label>Categoría</label>
+            <select bind:value={activeTag} on:change={onChangeCategory} disabled={!categories?.length}>
+              {#each categories as c}
+                <option value={c}>{c}</option>
+              {/each}
+            </select>
+          </div> -->
+    </div>
 
     <div class="row">
         <button on:click={togglePlay}>{playing ? '⏸ Pausa' : '▶ Play'}</button
@@ -312,7 +343,8 @@
                 {/each}
             </div>
             <small
-                >Tip:  truncando a 200 items para no freír el DOM; TODO virtualizado.</small
+                >Tip: truncando a 200 items para no freír el DOM; TODO
+                virtualizado.</small
             >
         </div>
 
