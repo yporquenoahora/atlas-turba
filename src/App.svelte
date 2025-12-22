@@ -53,6 +53,7 @@
   import SankeyMenu from "./lib/SankeyMenu.svelte";
   import SelectTurva from "./lib/SelectTurva.svelte";
   import TurbaSimFromData from "./lib/TurbaSimFromData.svelte";
+    import TimelineNarrativa from "./lib/TimelineNarrativa.svelte";
 
   // opcional: guardar la ruta seleccionada en App si quieres sincronizar con otros módulos
   let rutaSeleccionada = null;
@@ -244,7 +245,7 @@
 </script>
 <SelectTurva bind:caseId />
 <TurbaSimFromData {caseId} />
-
+<TimelineNarrativa/>
 
 <main class="app">
   <header class="header">

@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+/rag/index/
+/rag/**/memory.jsonl.lock

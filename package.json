@@ -14,7 +14,9 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
+    "chromadb": "^3.1.8",
     "d3": "^7.9.0",
-    "d3-sankey": "^0.12.3"
+    "d3-sankey": "^0.12.3",
+    "lancedb": "^0.0.1"
   }
 }
